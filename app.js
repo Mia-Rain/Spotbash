@@ -142,6 +142,4 @@ app.get('/refresh_token', function(req, res) {
     }
   });
 });
-
-console.log('Listening on 5000');
 app.listen(5000);

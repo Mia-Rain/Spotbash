@@ -1,2 +1,5 @@
 node*
 web-*
+./clients
+./authkeys
+./web-api-auth-examples/

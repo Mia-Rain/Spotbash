@@ -4,7 +4,8 @@ Spotify Client ~ Written in bash, using curl. With a bit of JS
 ###### TODO
 - Everything
 ***
-See [this](https://gist.github.com/ThatGeekyWeeb/96b4bc516eb9a3f67bce8febc89e17c7) for a list of commands, that will be used.
-***
 ## Setup
-1. `bash ./setup.sh`
+1. Go to the [developer dashboard](https://developer.spotify.com/dashboard/applications) and create a new app.
+2. Remember the `Client ID` and the `Client Secret`\
+2a. Open settings and add `http://localhost:5000/` to the redircet_uri whitelist.
+3. `bash ./setup.sh`

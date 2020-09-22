@@ -13,8 +13,8 @@ var cors = require('cors');
 var querystring = require('querystring');
 var cookieParser = require('cookie-parser');
 
-var client_id = '70d2e79bdbd64448b19092b8739f6554'; // Your client id
-var client_secret = 'c2ddf152c23e49688b2a1b0b1e8c716d'; // Your secret
+var client_id = 'id'; // Your client id
+var client_secret = 'sec'; // Your secret
 var redirect_uri = 'http://localhost:5000/callback'; // Your redirect uri
 
 /**
@@ -54,7 +54,6 @@ app.get('/login', function(req, res) {
       client_id: client_id,
       redirect_uri: redirect_uri,
       state: state,
-      show_dialog: 'true',
       scope: scope
     }));
 });
@@ -116,11 +115,12 @@ app.get('/callback', function(req, res) {
             error: 'invalid_token'
           }));
       }
+    console.log('%')
     console.log(access_token, '\n');
-    console.log('Above is access_token \n');
-    console.log(refresh_token, '\n');
-    console.log('Above is refresh_token \n');
-    process.exit() // No need to contiune running the web server, we have auth keys now.
+    //console.log('~');
+    console.log(refresh_token);
+    //console.log('~');
+    process.exit();
     });
   }
 });

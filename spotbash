@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source ~/.config/spotbash/authkeys
+source ${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/authkeys
 if [ -d $(which jq) ]; then
     echo "jq not found!"
     exit 1
@@ -71,10 +71,22 @@ play_track(){
 state(){
     get_info | jq -M 'del(.["device", "actions", "external_urls", "track_number", "preview_url", "popularity", "name", "uri", "href", "id", "is_local", "item", "shuffle_state", "repeat_state", "timestamp", "context", "progress_ms", "currently_playing_type"])' | sed -e 's/{//g' -e 's/\}//g' -e '/^[[:space:]]*$/d' | sed 's/://g' | jq -M -r | tr "\n" " " |sed -e 's/^[ \t]*//;s/[ \t]*$//' | tr " " ":" | sed -e 's/is_playing/Playing/g' -e 's/:/: /g' && echo ''
 }
+loop(){
+    curl -X "PUT" -d device_id=$id -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/me/player/repeat?state=track"
+}
+repeat(){
+    curl -X "PUT" -d device_id=$id -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/me/player/repeat?state=context"
+}
+repeat_off(){
+    curl -X "PUT" -d device_id=$id -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/me/player/repeat?state=off"
+}
+repeat_state(){
+    get_info | jq -M 'del(.["device", "actions", "external_urls", "track_number", "preview_url", "popularity", "name", "uri", "href", "id", "is_local", "item", "shuffle_state", "is_playing", "timestamp", "context", "progress_ms", "currently_playing_type"])' | sed -e 's/{//g' -e 's/\}//g' -e '/^[[:space:]]*$/d' |  sed 's/://g' | jq -M -r | tr "\n" " " |sed -e 's/^[ \t]*//;s/[ \t]*$//' | tr " " ":" | sed -e 's/repeat_state/Repeat/g' -e 's/:/: /g' && echo ''
+}
 help(){
 		cat << EOF
 ${0##*/}: Spotify Control API ~ Written in bash
-Usage: ${0##*/}: [auth|devices|search_play|search|play_track|get_volume|set_volume|get_info|previous|skip|pause|resume|state]
+Usage: ${0##*/}: [auth|devices|search_play|search|play_track|get_volume|set_volume|get_info|previous|skip|pause|resume|loop|repeat|state]
 auth: Print AUTHKEY and exit
 devices: Print first device ID and exit
 search_play: Search for "arg2" and play
@@ -87,7 +99,11 @@ previous: Change playback to previous song
 skip: Change playback to next song
 pause: Pause playback
 resume: Resume playback
-state: Print playing status and exit
+loop: Loop track
+repeat: Repeat current album/playlist
+state: Output playback status and exit
+repeat_off: Disable loop/repeat
+repeat_state: Output playback repeat status and exit
 EOF
 }
 auth

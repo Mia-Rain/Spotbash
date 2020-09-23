@@ -33,9 +33,6 @@ if [ ! -d ./node_modules ]; then
   mv ./node_modules ../
   cd ../
 fi
-if [ ! -d ./public ]; then
-  cp ./web-api-auth-examples/public ./
-fi
 rm ./web-api-auth-examples/ -rf
 echo "Please open 'localhost:5000' in your browser"
 node ./app.js > ./authkeys
@@ -46,6 +43,6 @@ sed -i "s/client_secret = '.*'/client_secret = 'sec'/g" ./app.js
 printf 'CLID=%b\nCLSEC=%b' "${CLID}" "${CLSEC}" > ./clients
 echo "ID and Secrets have been written to ./clients"
 rm ./public -rf
-mkdir -p $HOME/.config/spotbash/
+mkdir -p ${XDG_CACHE_HOME:-$HOME/.cache/}//spotbash
 cat ./clients >> ./authkeys
-cp ./authkeys $HOME/.config/spotbash/
+cp ./authkeys ${XDG_CACHE_HOME:-$HOME/.cache/}//spotbash

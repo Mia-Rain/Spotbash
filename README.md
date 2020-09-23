@@ -4,7 +4,7 @@
 <p>
 		<img src="https://cdn.discordapp.com/attachments/699685435198144553/758393878947561522/spotbash_ex2.png" width="20%" align="right"> 
 	</p>
-	Spotify Client ~ Written in bash, using curl.
+	Spotify Control API ~ Written in bash, using curl.
 </p>
 
 ***

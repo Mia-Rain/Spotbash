@@ -22,6 +22,9 @@ if [ ! -d ./node_modules ]; then
   mv ./node_modules ../
   cd ../
 fi
+if [ ! -d ./public ]; then
+  cp ./web-api-auth-examples/public ./
+fi
 rm ./web-api-auth-examples/ -rf
 echo "Please open 'localhost:5000' in your browser"
 node ./app.js > ./authkeys
@@ -31,4 +34,4 @@ sed -i "s/client_id = '.*'/client_id = 'id'/g" ./app.js
 sed -i "s/client_secret = '.*'/client_secret = 'sec'/g" ./app.js
 printf 'ID=%b\nsec=%b' "${ID}" "${sec}" > ./clients
 echo "ID and Secrets have been written to ./clients"
-# printf '\e[2J\e[H'
+rm ./public -rf

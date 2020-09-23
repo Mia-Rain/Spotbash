@@ -1,0 +1,15 @@
+--- ./web-api-auth-examples/authorization_code/public/index.html	2020-09-22 17:15:14.469998624 -0400
++++ ./public/index.html	2020-09-22 11:28:06.279497665 -0400
+@@ -19,7 +19,6 @@
+   <body>
+     <div class="container">
+       <div id="login">
+-        <h1>This is an example of the Authorization Code flow</h1>
+         <a href="/login" class="btn btn-primary">Log in with Spotify</a>
+       </div>
+       <div id="loggedin">
+@@ -139,4 +138,3 @@
+     </script>
+   </body>
+ </html>
+-

@@ -1,5 +1,16 @@
---- ./web-api-auth-examples/authorization_code/public/index.html	2020-09-22 17:15:14.469998624 -0400
-+++ ./public/index.html	2020-09-22 11:28:06.279497665 -0400
+diff --git a/public/index.html b/public/index.html
+index 9c57f1c..5fc2c06 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -1,7 +1,7 @@
+ <!doctype html>
+ <html>
+   <head>
+-    <title>Example of the Authorization Code flow with Spotify</title>
++    <title>Authorization</title>
+     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+     <style type="text/css">
+       #login, #loggedin {
 @@ -19,7 +19,6 @@
    <body>
      <div class="container">
@@ -8,8 +19,3 @@
          <a href="/login" class="btn btn-primary">Log in with Spotify</a>
        </div>
        <div id="loggedin">
-@@ -139,4 +138,3 @@
-     </script>
-   </body>
- </html>
--

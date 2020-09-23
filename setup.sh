@@ -1,10 +1,25 @@
 #!/usr/bin/env bash
 IFS=""
 reuri="http://localhost:5000/callback" # Callback uri
+if [ -f ./authkeys ]; then
+  echo "Setup already complete"
+  exit 1 # Die if './authkeys' exists
+fi  
 echo "Notice: THIS REQUIRES NODE TO BE INSTALLED!"
 if [ ! -d ./web-api-auth-examples ]; then
   git submodule update
+  git clone https://github.com/spotify/web-api-auth-examples.git &>/dev/null
 fi
+##
+  cd ./web-api-auth-examples/authorization_code
+  cp ../../app.patch ./
+  patch -Np0 ./app.js < ./app.patch
+  cd ./public 
+  cp ../../../index.patch ./
+  patch -Np0 ./index.html < ./index.patch
+  cd ../../../
+  cp ./web-api-auth-examples/authorization_code/* -r ./
+##
 if [ ! -f ./clients ]; then
   echo -n 'Client ID ='
   read ID
@@ -18,7 +33,7 @@ sed -i "s/'sec';/'${sec}';/g" ./app.js
 if [ ! -d ./node_modules ]; then
   cd ./web-api-auth-examples/
   echo "Installing auth examples"
-  npm install 2>/dev/null
+  npm install &>/dev/null
   mv ./node_modules ../
   cd ../
 fi

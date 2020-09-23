@@ -1,6 +1,8 @@
---- ./web-api-auth-examples/authorization_code/app.js	2020-09-22 17:15:14.469998624 -0400
-+++ ./app.js	2020-09-22 17:14:17.609998638 -0400
-@@ -13,9 +13,9 @@
+diff --git a/app.js b/app.js
+index 9b8a6b5..ab04852 100644
+--- a/app.js
++++ b/app.js
+@@ -13,9 +13,9 @@ var cors = require('cors');
  var querystring = require('querystring');
  var cookieParser = require('cookie-parser');
  
@@ -13,26 +15,16 @@
  
  /**
   * Generates a random string containing numbers and letters
-@@ -46,14 +46,15 @@
+@@ -46,7 +46,7 @@ app.get('/login', function(req, res) {
    res.cookie(stateKey, state);
  
    // your application requests authorization
 -  var scope = 'user-read-private user-read-email';
 +  var scope = 'user-read-private user-read-email user-library-read playlist-modify-private user-read-currently-playing user-modify-playback-state playlist-read-collaborative user-read-playback-state';
-+  // Not all of the above scopes may be used
    res.redirect('https://accounts.spotify.com/authorize?' +
      querystring.stringify({
        response_type: 'code',
-       client_id: client_id,
--      scope: scope,
-       redirect_uri: redirect_uri,
--      state: state
-+      state: state,
-+      scope: scope
-     }));
- });
- 
-@@ -81,7 +82,7 @@
+@@ -81,7 +81,7 @@ app.get('/callback', function(req, res) {
          grant_type: 'authorization_code'
        },
        headers: {
@@ -41,7 +33,7 @@
        },
        json: true
      };
-@@ -100,7 +101,6 @@
+@@ -100,7 +100,6 @@ app.get('/callback', function(req, res) {
  
          // use the access token to access the Spotify Web API
          request.get(options, function(error, response, body) {
@@ -49,20 +41,18 @@
          });
  
          // we can also pass the token to the browser to make requests from there
-@@ -115,6 +115,12 @@
+@@ -115,6 +114,10 @@ app.get('/callback', function(req, res) {
              error: 'invalid_token'
            }));
        }
-+    console.log('%')
++ 	 console.log('%')
 +    console.log(access_token, '\n');
-+    //console.log('~');
 +    console.log(refresh_token);
-+    //console.log('~');
 +    process.exit();
      });
    }
  });
-@@ -125,7 +131,7 @@
+@@ -125,7 +127,7 @@ app.get('/refresh_token', function(req, res) {
    var refresh_token = req.query.refresh_token;
    var authOptions = {
      url: 'https://accounts.spotify.com/api/token',
@@ -71,7 +61,7 @@
      form: {
        grant_type: 'refresh_token',
        refresh_token: refresh_token
-@@ -142,6 +148,4 @@
+@@ -142,6 +144,4 @@ app.get('/refresh_token', function(req, res) {
      }
    });
  });
@@ -79,4 +69,3 @@
 -console.log('Listening on 8888');
 -app.listen(8888);
 +app.listen(5000);
-\ No newline at end of file

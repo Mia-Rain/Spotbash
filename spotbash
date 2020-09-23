@@ -1,0 +1,24 @@
+#!/usr/bin/bash
+id=$(echo "$(curl -X "GET" "https://api.spotify.com/v1/me/player/devices" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer  $AUTHKEY" -s)" | jq -M '.devices' | sed '/},/q' | sed -e 's/},/}\n\]/g' -e 's/\]//g' -e 's/\[//g' | jq -M '.id' | sed -e '0,/"/{s/"/id="/}' | sed 's/"//g')
+source ~/.config/spotbash/authkeys
+if [ -d $(which jq) ]; then
+    echo "jq not found!"
+    exit 1
+fi
+if [ -d $(which curl) ]; then
+    echo "curl not found!"
+    exit 1
+fi
+#refresh(){
+#    curl -X POST -d grant_type=refresh_token -d refresh_token=$rekey https://accounts.spotify.com/api/token -s | jq '.access_token' -M | sed 's/"//g'
+#}
+#while sleep 1h; do refresh ;done &
+# For right now we get a new oauthkey everytime we use spotbash; the oauth key only lasts 1 hour, while the $REKEY is infinite
+pause(){
+    curl -X PUT -d device_id=$id -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" https://api.spotify.com/v1/me/player/pause
+}
+resume(){
+    curl -X PUT --data "{}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" https://api.spotify.com/v1/me/player/play
+}
+export $(curl -X POST -d grant_type=refresh_token -d refresh_token=$REKEY -d client_id=$CLID -d client_secret=$CLSEC https://accounts.spotify.com/api/token -s | jq '.access_token' -M | sed '0,/"/{s/"/AUTHKEY="/}' | sed 's/"//g')
+${1}

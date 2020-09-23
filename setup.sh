@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 IFS=""
 reuri="http://localhost:5000/callback" # Callback uri
-if [ -f ./authkeys ]; then
-  echo "Setup already complete"
-  exit 1 # Die if './authkeys' exists
-fi  
 echo "Notice: THIS REQUIRES NODE TO BE INSTALLED!"
 if [ ! -d ./web-api-auth-examples ]; then
   git submodule update
@@ -43,10 +39,12 @@ fi
 rm ./web-api-auth-examples/ -rf
 echo "Please open 'localhost:5000' in your browser"
 node ./app.js > ./authkeys
-echo $(cat authkeys | tr -d '\n' | sed -e 's/ / ~ REKEY=/g' -e 's/%/AUTHKEY=/g' | tr -d ' ' | tr '~' '\n' | tr ' ' '\n') > ./authkeys
+echo $(cat ./authkeys | sed -z 's/%\n/REKEY=/g') > ./authkeys
 echo "Authkeys were written to ./authkeys"
 sed -i "s/client_id = '.*'/client_id = 'id'/g" ./app.js
 sed -i "s/client_secret = '.*'/client_secret = 'sec'/g" ./app.js
 printf 'ID=%b\nsec=%b' "${ID}" "${sec}" > ./clients
 echo "ID and Secrets have been written to ./clients"
 rm ./public -rf
+mkdir -p $HOME/.config/spotbash/
+cp ./authkeys $HOME/.config/spotbash/

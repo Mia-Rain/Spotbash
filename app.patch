@@ -41,12 +41,11 @@ index 9b8a6b5..ab04852 100644
          });
  
          // we can also pass the token to the browser to make requests from there
-@@ -115,6 +114,10 @@ app.get('/callback', function(req, res) {
+@@ -115,6 +114,9 @@ app.get('/callback', function(req, res) {
              error: 'invalid_token'
            }));
        }
 + 	 console.log('%')
-+    console.log(access_token, '\n');
 +    console.log(refresh_token);
 +    process.exit();
      });

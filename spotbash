@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 source ~/.config/spotbash/authkeys
 if [ -d $(which jq) ]; then
     echo "jq not found!"
@@ -68,10 +68,13 @@ play_track(){
     fi
     curl -s -X PUT "https://api.spotify.com/v1/me/player/play?device_${id}" --data "{\"uris\":[\"$uri\"]}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
 }
+state(){
+    get_info | jq -M 'del(.["device", "actions", "external_urls", "track_number", "preview_url", "popularity", "name", "uri", "href", "id", "is_local", "item", "shuffle_state", "repeat_state", "timestamp", "context", "progress_ms", "currently_playing_type"])' | sed -e 's/{//g' -e 's/\}//g' -e '/^[[:space:]]*$/d' | sed 's/://g' | jq -M -r | tr "\n" " " |sed -e 's/^[ \t]*//;s/[ \t]*$//' | tr " " ":" | sed -e 's/is_playing/Playing/g' -e 's/:/: /g' && echo ''
+}
 help(){
 		cat << EOF
 ${0##*/}: Spotify Control API ~ Written in bash
-Usage: ${0##*/}: [auth|devices|search_play|search|play_track|get_volume|set_volume|get_info|previous|skip|pause|resume]
+Usage: ${0##*/}: [auth|devices|search_play|search|play_track|get_volume|set_volume|get_info|previous|skip|pause|resume|state]
 auth: Print AUTHKEY and exit
 devices: Print first device ID and exit
 search_play: Search for "arg2" and play
@@ -84,6 +87,7 @@ previous: Change playback to previous song
 skip: Change playback to next song
 pause: Pause playback
 resume: Resume playback
+state: Print playing status and exit
 EOF
 }
 auth
@@ -93,7 +97,6 @@ if [ $1 = "auth" ]; then
     exit 0
 fi
 if [ $1 = "search_play" ]; then
-    echo ${2}
     printf 'search=%b' "${2}" > $HOME/.config/spotbash/search
     uri=$(search | sed -e 's/Name:.*//g' -e 's/uri:[[:space:]]//g' -e '/^[[:space:]]*$/d')
     printf 'uri=%b' "${uri}" > $HOME/.config/spotbash/uri

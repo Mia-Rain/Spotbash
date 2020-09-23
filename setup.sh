@@ -24,8 +24,8 @@ if [ ! -f ./clients ]; then
 else
   source ./clients
 fi
-sed -i "s/'id';/'${ID}';/g" ./app.js
-sed -i "s/'sec';/'${sec}';/g" ./app.js
+sed -i "s/'id';/'${CLID}';/g" ./app.js
+sed -i "s/'sec';/'${CLSEC}';/g" ./app.js
 if [ ! -d ./node_modules ]; then
   cd ./web-api-auth-examples/
   echo "Installing auth examples"
@@ -43,8 +43,9 @@ echo $(cat ./authkeys | sed -z 's/%\n/REKEY=/g') > ./authkeys
 echo "Authkeys were written to ./authkeys"
 sed -i "s/client_id = '.*'/client_id = 'id'/g" ./app.js
 sed -i "s/client_secret = '.*'/client_secret = 'sec'/g" ./app.js
-printf 'ID=%b\nsec=%b' "${ID}" "${sec}" > ./clients
+printf 'CLID=%b\nCLSEC=%b' "${CLID}" "${CLSEC}" > ./clients
 echo "ID and Secrets have been written to ./clients"
 rm ./public -rf
 mkdir -p $HOME/.config/spotbash/
+cat ./clients >> ./authkeys
 cp ./authkeys $HOME/.config/spotbash/

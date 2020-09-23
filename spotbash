@@ -68,6 +68,24 @@ play_track(){
     fi
     curl -s -X PUT "https://api.spotify.com/v1/me/player/play?device_${id}" --data "{\"uris\":[\"$uri\"]}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
 }
+help(){
+		cat << EOF
+${0##*/}: Spotify Control API ~ Written in bash
+Usage: ${0##*/}: [auth|devices|search_play|search|play_track|get_volume|set_volume|get_info|previous|skip|pause|resume]
+auth: Print AUTHKEY and exit
+devices: Print first device ID and exit
+search_play: Search for "arg2" and play
+search: Search for "arg2" and output URI & NAME
+play_track: Play URI
+get_volume: Output player volume and exit
+set_volume: Set player volume to "arg2" and exit
+get_info: Get debugging info about currently playing device
+previous: Change playback to previous song
+skip: Change playback to next song
+pause: Pause playback
+resume: Resume playback
+EOF
+}
 auth
 id=$(echo "$(curl -X "GET" "https://api.spotify.com/v1/me/player/devices" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer  $AUTHKEY" -s)" | jq -M '.devices' | sed '/},/q' | sed -e 's/},/}\n\]/g' -e 's/\]//g' -e 's/\[//g' | jq -M '.id' | sed -e '0,/"/{s/"/id="/}' | sed 's/"//g')
 if [ $1 = "auth" ]; then

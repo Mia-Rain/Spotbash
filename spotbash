@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 source ${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/authkeys
-if [ -d $(which jq) ]; then
+if [ ! -f $(which jq) ]; then
     echo "jq not found!"
     exit 1
 fi
-if [ -d $(which curl) ]; then
+if [ ! -f $(which curl) ]; then
     echo "curl not found!"
     exit 1
 fi
@@ -29,7 +29,7 @@ pause(){
     curl -X PUT -s -d device_id=$id -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" https://api.spotify.com/v1/me/player/pause
 }
 resume(){
-    curl --silent --show-error --fail -X PUT --data "{}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" https://api.spotify.com/v1/me/player/play
+    curl -s --fail -X PUT --data "{}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" https://api.spotify.com/v1/me/player/play
 }
 next(){
     curl -X "POST" -s -d device_id=$id -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" https://api.spotify.com/v1/me/player/next
@@ -54,19 +54,22 @@ set_volume(){
     curl -s -X PUT -d device_id=$id -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/me/player/volume?volume_percent=$2"
 }
 search(){
-    if [ -f $HOME/.config/spotbash/search ]; then
-        source $HOME/.config/spotbash/search
+    if [ -f ${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search ]; then
+        source ${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search
     else
         search="$2"
+    fi
+    if [ $(echo $search | grep -q '[[:space:]]') ]; then
+        search=$(echo -n $search | sed 's/ /%20/g')
     fi
     curl -s X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${search}&limit=1&type=track" | jq -M '.tracks' | jq ".items,del(.[])" -M| sed -e '0,/\[/{s/\[//}' -e '/{}/d' | sed -z -e 's/\}\n\]/\}/g' | jq -M 'del(.["album", "artists", "available_markets", "external_urls", "external_ids"])' | sed '/\},$/d' | jq -M 'del(.["disc_number", "duration_ms", "explicit", "href", "id", "is_local", "popularity", "type", "preview_url", "track_number"])' | sed -e 's/\}//g' -e 's/{//g' -e '/^[[:space:]]*$/d' -e 's/"//g' -e 's/,//g' -e 's/^[ \t]*//' -e 's/name/Name/g'
 }
 auth(){
-export $(curl X POST -d grant_type=refresh_token -d refresh_token=$REKEY -d client_id=$CLID -d client_secret=$CLSEC https://accounts.spotify.com/api/token -s | jq '.access_token' -M | sed '0,/"/{s/"/AUTHKEY="/}' | sed 's/"//g')
+  export "$(curl X POST -d grant_type=refresh_token -d refresh_token=$REKEY -d client_id=$CLID -d client_secret=$CLSEC https://accounts.spotify.com/api/token -s | jq '.access_token' -M | sed '0,/\"/{s/\"/AUTHKEY="/}' | sed 's/\"//g')"
 }
 play_track(){
-    if [ -f $HOME/.config/spotbash/uri ]; then
-        source $HOME/.config/spotbash/search
+    if [ -f ${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/uri ]; then
+        source ${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/uri
     else
         uri="$2"
     fi
@@ -89,6 +92,7 @@ repeat_state(){
 }
 set(){
     curl -X "PUT" "https://api.spotify.com/v1/me/player" --data "{\"device_ids\":[\"$2\"]}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
+    resume
 }
 help(){
 		cat << EOF
@@ -125,16 +129,18 @@ if [ $1 = "auth" ]; then
     exit 0
 fi
 if [ $1 = "search_play" ]; then
-    printf 'search=%b' "${2}" > $HOME/.config/spotbash/search
+    printf "search='%b'" "${2}" > ${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search
+    sed -i -e 's/ /%20/g' ${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search
     uri=$(search | sed -e 's/Name:.*//g' -e 's/uri:[[:space:]]//g' -e '/^[[:space:]]*$/d')
-    printf 'uri=%b' "${uri}" > $HOME/.config/spotbash/uri
+    printf "uri='%b'" "${uri}" > ${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/uri
     play_track
-    rm -f $HOME/.config/spotbash/search
-    rm -f $HOME/.config/spotbash/uri
     exit 0
 fi
 ${1} $@
 if [ $? != "0" ]; then
     echo "ERROR: Something went wrong!"
-    echo "A device may not currently be seleted"
+    echo "Possible issues are:"
+    echo "1. A device may not currently be seleted"
+    echo "2. The current user does not have Premium"
+    echo "3. There is no connection"
 fi

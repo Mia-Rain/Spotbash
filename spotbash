@@ -50,15 +50,38 @@ set_volume(){
     curl -s -X PUT -d device_id=$id -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/me/player/volume?volume_percent=$2"
 }
 search(){
-    curl -s X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${2}&limit=1&type=track" | jq -M '.tracks' | jq ".items,del(.[])" -M| sed -e '0,/\[/{s/\[//}' -e '/{}/d' | sed -z -e 's/\}\n\]/\}/g' | jq -M 'del(.["album", "artists", "available_markets", "external_urls", "external_ids"])' | sed '/\},$/d' | jq -M 'del(.["disc_number", "duration_ms", "explicit", "href", "id", "is_local", "popularity", "type", "preview_url", "track_number"])' | sed -e 's/\}//g' -e 's/{//g' -e '/^[[:space:]]*$/d' -e 's/"//g' -e 's/,//g' -e 's/^[ \t]*//' -e 's/name/Name/g'
+    if [ -f $HOME/.config/spotbash/search ]; then
+        source $HOME/.config/spotbash/search
+    else
+        search="$2"
+    fi
+    curl -s X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${search}&limit=1&type=track" | jq -M '.tracks' | jq ".items,del(.[])" -M| sed -e '0,/\[/{s/\[//}' -e '/{}/d' | sed -z -e 's/\}\n\]/\}/g' | jq -M 'del(.["album", "artists", "available_markets", "external_urls", "external_ids"])' | sed '/\},$/d' | jq -M 'del(.["disc_number", "duration_ms", "explicit", "href", "id", "is_local", "popularity", "type", "preview_url", "track_number"])' | sed -e 's/\}//g' -e 's/{//g' -e '/^[[:space:]]*$/d' -e 's/"//g' -e 's/,//g' -e 's/^[ \t]*//' -e 's/name/Name/g'
 }
 auth(){
 export $(curl X POST -d grant_type=refresh_token -d refresh_token=$REKEY -d client_id=$CLID -d client_secret=$CLSEC https://accounts.spotify.com/api/token -s | jq '.access_token' -M | sed '0,/"/{s/"/AUTHKEY="/}' | sed 's/"//g')
+}
+play_track(){
+    if [ -f $HOME/.config/spotbash/uri ]; then
+        source $HOME/.config/spotbash/search
+    else
+        uri="$2"
+    fi
+    curl -s -X PUT "https://api.spotify.com/v1/me/player/play?device_${id}" --data "{\"uris\":[\"$uri\"]}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
 }
 auth
 id=$(echo "$(curl -X "GET" "https://api.spotify.com/v1/me/player/devices" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer  $AUTHKEY" -s)" | jq -M '.devices' | sed '/},/q' | sed -e 's/},/}\n\]/g' -e 's/\]//g' -e 's/\[//g' | jq -M '.id' | sed -e '0,/"/{s/"/id="/}' | sed 's/"//g')
 if [ $1 = "auth" ]; then
     echo $AUTHKEY
+    exit 0
+fi
+if [ $1 = "search_play" ]; then
+    echo ${2}
+    printf 'search=%b' "${2}" > $HOME/.config/spotbash/search
+    uri=$(search | sed -e 's/Name:.*//g' -e 's/uri:[[:space:]]//g' -e '/^[[:space:]]*$/d')
+    printf 'uri=%b' "${uri}" > $HOME/.config/spotbash/uri
+    play_track
+    rm -f $HOME/.config/spotbash/search
+    rm -f $HOME/.config/spotbash/uri
     exit 0
 fi
 ${1} $@

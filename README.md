@@ -4,11 +4,11 @@ Spotify Client ~ Written in bash, using curl. With a bit of JS
 ###### TODO
 - [x] Add pause support
 - [x] Add resume support 
-- [] Add play 'track' support
-- [] Add play 'playlist' support
-- [] Add play 'artist' suport
-- [] Add play 'album' support
-- [] Add *any* modify support
+- [ ] Add play 'track' support
+- [ ] Add play 'playlist' support
+- [ ] Add play 'artist' suport
+- [ ] Add play 'album' support
+- [ ] Add *any* modify support
 ***
 ## Setup
 1. Go to the [developer dashboard](https://developer.spotify.com/dashboard/applications) and create a new app.

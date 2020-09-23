@@ -18,9 +18,9 @@ fi
 ##
 if [ ! -f ./clients ]; then
   echo -n 'Client ID ='
-  read ID
+  read CLID
   echo -n 'Client Secret ='
-  read sec
+  read CLSEC
 else
   source ./clients
 fi

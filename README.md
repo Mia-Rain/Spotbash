@@ -19,7 +19,7 @@
 2. Remember the `Client ID` and the `Client Secret`\
 2a. Open settings and add `http://localhost:5000/` to the redircet_uri whitelist
 > Optionally edit `app.patch` to change the scopes, currently all non-follow scopes are used.
-3. `bash ./setup.sh
+3. `bash ./setup.sh`
 ## Usage
 1. `bash ./spotbash help`
 ***

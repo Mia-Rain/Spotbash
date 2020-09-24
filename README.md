@@ -9,9 +9,8 @@
 
 ***
 #### TODO
-- [ ] Add play `playlist` support
 - [ ] Add play `artist` suport
-- [ ] Add play `album` support
+- [ ] Add `album` search support
 - [ ] Add *any* modify support
 ***
 ## Setup
@@ -22,6 +21,34 @@
 3. `bash ./setup.sh`
 ## Usage
 1. `bash ./spotbash help`
+```
+spotbash: Spotify Control API ~ Written in bash
+Usage: spotbash:
+[auth|device|search_play|search|play_track|get_volume|set_volume|get_info|previous|skip|pause|resume|loop|repeat|state|set|playlists|play]
+***
+auth: Print AUTHKEY and exit
+device: Print first device ID and exit
+devices: List ALL devices and exit
+search_play: Search for "arg2" and play
+search: Search for "arg2" and output URI & NAME
+play_track: Play URI
+get_volume: Output player volume and exit
+set_volume: Set player volume to "arg2" and exit
+get_info: Get debugging info about currently playing device
+previous: Change playback to previous song
+skip: Change playback to next song
+pause: Pause playback
+resume: Resume playback
+loop: Loop track
+repeat: Repeat current album/playlist
+state: Output playback status and exit
+repeat_off: Disable loop/repeat
+repeat_state: Output playback repeat status and exit
+set: Move playback to "arg2" | "arg2" must be a device ID
+playlists: Output list of users playlists and exit
+play: Play "arg2" | "arg2" must be Album or Playlist URI
+***
+```
 ***
 Spotbash is a "Control API" which means it only controls the Spotify placyback of devices. It cannot be used as a standalone player!
 ***

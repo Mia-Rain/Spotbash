@@ -20,7 +20,7 @@ index 9b8a6b5..ab04852 100644
  
    // your application requests authorization
 -  var scope = 'user-read-private user-read-email';
-+  var scope = 'user-read-private user-read-email user-library-read playlist-modify-private user-read-currently-playing user-modify-playback-state playlist-read-collaborative user-read-playback-state streaming';
++  var scope = 'user-read-private user-read-email user-library-read playlist-modify-private user-read-currently-playing user-modify-playback-state playlist-read-collaborative user-read-playback-state streaming playlist-read-private';
 +  // The above scopes are for all purposes, and should be edited to meet the users needs
    res.redirect('https://accounts.spotify.com/authorize?' +
      querystring.stringify({

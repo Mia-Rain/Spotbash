@@ -92,16 +92,19 @@ repeat_state(){
 }
 set(){
     curl -X "PUT" "https://api.spotify.com/v1/me/player" --data "{\"device_ids\":[\"$2\"]}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
-    resume
+    pre
 }
 playlists(){
     echo 'Playlists:' && curl -s -X GET "https://api.spotify.com/v1/me/playlists" -H 'Accept: application/json' -H 'Content-Type: application/json' -H "Authorization: Bearer $AUTHKEY" | jq '.[]' | sed -z 's/]\n.*/]/g' | jq -M '.[] | .name,.uri' 2>/dev/null | sed 's/"//g'
+}
+play(){
+    curl -X "PUT" "https://api.spotify.com/v1/me/player/play?device_${id}" --data "{\"context_uri\":\$2\"}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
 }
 help(){
 		cat << EOF
 ${0##*/}: Spotify Control API ~ Written in bash
 Usage: ${0##*/}:
-[auth|device|search_play|search|play_track|get_volume|set_volume|get_info|previous|skip|pause|resume|loop|repeat|state|set|playlists]
+[auth|device|search_play|search|play_track|get_volume|set_volume|get_info|previous|skip|pause|resume|loop|repeat|state|set|playlists|play]
 ***
 auth: Print AUTHKEY and exit
 device: Print first device ID and exit
@@ -122,7 +125,8 @@ state: Output playback status and exit
 repeat_off: Disable loop/repeat
 repeat_state: Output playback repeat status and exit
 set: Move playback to "arg2" | "arg2" must be a device ID
-playlists
+playlists: Output list of users playlists and exit
+play: Play "arg2" | "arg2" must be Album or Playlist URI
 ***
 EOF
 }

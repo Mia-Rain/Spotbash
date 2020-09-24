@@ -47,8 +47,8 @@ device(){
      echo "Device_${id}"
 }
 devices(){
-    echo "WARNING: This command should only be used when picking a device for usage with 'set'"
-    curl -X "GET" "https://api.spotify.com/v1/me/player/devices" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer  $AUTHKEY" -s | jq -M '.devices'
+    IFS=""
+    curl -X "GET" "https://api.spotify.com/v1/me/player/devices" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer  $AUTHKEY" -s | jq '.[]' | sed -z 's/]\n.*/]/g' | jq -M '.[]' | jq '.name,.id' -M | sed 's/"//g'
 }
 set_volume(){
     curl -s -X PUT -d device_id=$id -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/me/player/volume?volume_percent=$2"

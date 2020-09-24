@@ -2,7 +2,7 @@
 # Spotbash
 <p>
 <p>
-		<img src="https://cdn.discordapp.com/attachments/699685435198144553/758393878947561522/spotbash_ex2.png" width="20%" align="right"> 
+		<img src="https://cdn.discordapp.com/attachments/699685435198144553/758393878947561522/spotbash_ex2.png" width="27%" align="right"> 
 	</p>
 	Spotify Control API ~ Written in bash, using curl.
 </p>
@@ -53,3 +53,8 @@ play: Play "arg2" | "arg2" must be Album or Playlist URI
 Spotbash is a "Control API" which means it only controls the Spotify placyback of devices. It cannot be used as a standalone player!
 ***
 Some usable devices are `librespot`, `Spotify Web Playback SDK`, `Spotifyd`, or any device with a Spotify app. 
+***
+I recommend using `Spotify Web Playback SDK` as a device, as it only requires a spotify compatible browser, and can be edited to support track based repeat.\
+The linked `index.html` requires one to run `./spotbash auth` and copy the token to `const token = '*';`, found within the `index.html` file.\
+NOTE: Playback can only last 1 hour as the oauth token expires in 1 hour of creation.
+> [`index.html` (Click Me)](https://cdn.discordapp.com/attachments/699685435198144553/758540007572373514/index.html)

@@ -1,71 +1,70 @@
 diff --git a/app.js b/app.js
-index 9b8a6b5..ab04852 100644
+index 8a1634a..d535c84 100644
 --- a/app.js
 +++ b/app.js
-@@ -13,9 +13,9 @@ var cors = require('cors');
- var querystring = require('querystring');
- var cookieParser = require('cookie-parser');
+@@ -13,9 +13,9 @@ const cors = require("cors");
+ const querystring = require("querystring");
+ const cookieParser = require("cookie-parser");
  
--var client_id = 'CLIENT_ID'; // Your client id
--var client_secret = 'CLIENT_SECRET'; // Your secret
--var redirect_uri = 'REDIRECT_URI'; // Your redirect uri
-+var client_id = 'id'; // Your client id
-+var client_secret = 'sec'; // Your secret
-+var redirect_uri = 'http://localhost:5000/callback'; // Your redirect uri
+-const client_id = "CLIENT_ID"; // Your client id
+-const client_secret = "CLIENT_SECRET"; // Your secret
+-const redirect_uri = "REDIRECT_URI"; // Your redirect uri
++const client_id = 'id'; // Your client id
++const client_secret = 'sec'; // Your secret
++const redirect_uri = 'http://localhost:5000/callback'; // Your redirect uri
  
  /**
   * Generates a random string containing numbers and letters
-@@ -46,7 +46,8 @@ app.get('/login', function(req, res) {
+@@ -47,7 +47,7 @@ app.get("/login", function(req, res) {
    res.cookie(stateKey, state);
  
    // your application requests authorization
--  var scope = 'user-read-private user-read-email';
-+  var scope = 'user-read-private user-read-email user-library-read playlist-modify-private user-read-currently-playing user-modify-playback-state playlist-read-collaborative user-read-playback-state streaming playlist-read-private';
-+  // The above scopes are for all purposes, and should be edited to meet the users needs
-   res.redirect('https://accounts.spotify.com/authorize?' +
-     querystring.stringify({
-       response_type: 'code',
-@@ -81,7 +81,7 @@ app.get('/callback', function(req, res) {
-         grant_type: 'authorization_code'
-       },
-       headers: {
--        'Authorization': 'Basic ' + (new Buffer(client_id + ':' + client_secret).toString('base64'))
-+        'Authorization': 'Basic ' + (Buffer.from(client_id + ':' + client_secret).toString('base64'))
-       },
-       json: true
-     };
-@@ -100,7 +100,6 @@ app.get('/callback', function(req, res) {
+-  let scope = "user-read-private user-read-email";
++  let scope = 'user-read-private user-read-email user-library-read playlist-modify-private user-read-currently-playing user-modify-playback-state playlist-read-collaborative user-read-playback-state streaming playlist-read-private';
+   res.redirect(
+     "https://accounts.spotify.com/authorize?" +
+       querystring.stringify({
+@@ -66,6 +66,9 @@ app.get("/callback", function(req, res) {
+   let code = req.query.code || null;
+   let state = req.query.state || null;
+   let storedState = req.cookies ? req.cookies[stateKey] : null;
++  let client_id = client_id || MISSING;
++  let client_secret = client_secret || MISSING;
++  let redirect_uri = redirect_uri || 'http://localhost:5000/callback';
  
-         // use the access token to access the Spotify Web API
-         request.get(options, function(error, response, body) {
--          console.log(body);
-         });
- 
-         // we can also pass the token to the browser to make requests from there
-@@ -115,6 +114,9 @@ app.get('/callback', function(req, res) {
-             error: 'invalid_token'
-           }));
-       }
-+ 	 console.log('%')
-+    console.log(refresh_token);
-+    process.exit();
-     });
+   if (state === null || state !== storedState) {
+     res.redirect("/#" + querystring.stringify({ error: "state_mismatch" }));
+@@ -99,12 +102,25 @@ app.get("/callback", function(req, res) {
+             res.redirect(
+               "/#" + querystring.stringify({ access_token, refresh_token })
+             );
++	  console.log('REKEY=' + refresh_token);
+           })
+           .catch(e => {
+             res.redirect(
+               "/#" + querystring.stringify({ error: e.response.data })
+             );
+           });
++	  function refresh() {
++	  axios({
++          	method: "post",
++          	url: "https://accounts.spotify.com/api/token",
++		client_id: client_id,
++		client_secret: client_secret,
++		grant_type: 'refresh_token',
++		refresh_token: refresh_token,
++          	headers: { "Content-Type": "application/x-www-form-urlencoded" }
++          })
++	  }
++	  setInterval(refresh, 1000 * 56 * 56);
+       })
+       .catch(e => console.error(e.response.data));
    }
- });
-@@ -125,7 +127,7 @@ app.get('/refresh_token', function(req, res) {
-   var refresh_token = req.query.refresh_token;
-   var authOptions = {
-     url: 'https://accounts.spotify.com/api/token',
--    headers: { 'Authorization': 'Basic ' + (new Buffer(client_id + ':' + client_secret).toString('base64')) },
-+    headers: { 'Authorization': 'Basic ' + (Buffer.from(client_id + ':' + client_secret).toString('base64')) },
-     form: {
-       grant_type: 'refresh_token',
-       refresh_token: refresh_token
-@@ -142,6 +144,4 @@ app.get('/refresh_token', function(req, res) {
-     }
-   });
+@@ -137,6 +153,4 @@ app.get("/refresh_token", function(req, res) {
+       console.error(e.response.data);
+     });
  });
 -
--console.log('Listening on 8888');
+-console.log("Listening on 8888");
 -app.listen(8888);
 +app.listen(5000);

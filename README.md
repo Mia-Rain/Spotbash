@@ -1,6 +1,4 @@
 # Spotbash
-NOTE: Development of Spotbash is currently paused, while a proper environment for it's testing is created.
-***
 <p>
 <p>
 		<img src="https://cdn.discordapp.com/attachments/699685435198144553/758393878947561522/spotbash_ex2.png" width="27%" align="right"> 
@@ -15,8 +13,6 @@ NOTE: Development of Spotbash is currently paused, while a proper environment fo
 
 :x: Add *any* modify support
 > Modify support seems to need to be done server side, support for it is currently on hold.
-
-- [ ] Add functional Web SDK device into `app.js`
 ***
 ## Setup
 1. Go to the [developer dashboard](https://developer.spotify.com/dashboard/applications) and create a new app.
@@ -59,7 +55,5 @@ Spotbash is a "Control API" which means it only controls the Spotify placyback o
 ***
 Some usable devices are `librespot`, `Spotify Web Playback SDK`, `Spotifyd`, or any device with a Spotify app. 
 ***
-I recommend using `Spotify Web Playback SDK` as a device, as it only requires a spotify compatible browser, and can be edited to support track based repeat.\
-The linked `index.html` requires one to run `./spotbash auth` and copy the token to `const token = '*';`, found within the `index.html` file.\
-NOTE: Playback can only last 1 hour as the oauth token expires in 1 hour of creation.
-> [`index.html` (Click Me)](https://cdn.discordapp.com/attachments/699685435198144553/758540007572373514/index.html)
+I recommend using `Spotify Web Playback SDK` as a device, as it only requires a spotify compatible browser.\
+Addtionally a Web Playback SDK device is embed into `app.js`, and can be used after running `setup.sh`

@@ -11,7 +11,8 @@
 #### TODO
 - [ ] Add play `artist` suport
 - [ ] Add `album` search support
-- [ ] Add *any* modify support
+:x: Add *any* modify support ~ Modify support seems to need to be done server side, support for it is currently on hold.
+- [ ] Add functional Web SDK device into `app.js`
 ***
 ## Setup
 1. Go to the [developer dashboard](https://developer.spotify.com/dashboard/applications) and create a new app.

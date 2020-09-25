@@ -1,5 +1,6 @@
-
 # Spotbash
+NOTE: Development of Spotbash is currently paused, while a proper environment for it's testing is created.
+***
 <p>
 <p>
 		<img src="https://cdn.discordapp.com/attachments/699685435198144553/758393878947561522/spotbash_ex2.png" width="27%" align="right"> 

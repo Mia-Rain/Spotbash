@@ -11,7 +11,10 @@
 #### TODO
 - [ ] Add play `artist` suport
 - [ ] Add `album` search support
-:x: Add *any* modify support ~ Modify support seems to need to be done server side, support for it is currently on hold.
+
+:x: Add *any* modify support
+> Modify support seems to need to be done server side, support for it is currently on hold.
+
 - [ ] Add functional Web SDK device into `app.js`
 ***
 ## Setup

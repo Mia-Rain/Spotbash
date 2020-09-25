@@ -100,11 +100,14 @@ playlists(){
 play(){
     curl -X "PUT" "https://api.spotify.com/v1/me/player/play?device_${id}" --data "{\"context_uri\":\$2\"}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
 }
+kill_node(){
+    pkill node
+}
 help(){
 		cat << EOF
 ${0##*/}: Spotify Control API ~ Written in bash
 Usage: ${0##*/}:
-[auth|device|search_play|search|play_track|get_volume|set_volume|get_info|previous|skip|pause|resume|loop|repeat|state|set|playlists|play]
+[auth|device|search_play|search|play_track|get_volume|set_volume|get_info|previous|skip|pause|resume|loop|repeat|state|set|playlists|play|kill_node]
 ***
 auth: Print AUTHKEY and exit
 device: Print first device ID and exit
@@ -127,6 +130,7 @@ repeat_state: Output playback repeat status and exit
 set: Move playback to "arg2" | "arg2" must be a device ID
 playlists: Output list of users playlists and exit
 play: Play "arg2" | "arg2" must be Album or Playlist URI
+kill_node: Can be used to quickly kill any node processes | used to kill SDK server
 ***
 EOF
 }

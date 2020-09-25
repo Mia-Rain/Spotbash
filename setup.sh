@@ -2,6 +2,7 @@
 IFS=""
 reuri="http://localhost:5000/callback" # Callback uri
 echo "Notice: THIS REQUIRES NODE TO BE INSTALLED!"
+pkill node &>/dev/null
 if [ ! -d ./web-api-auth-examples ]; then
   git submodule update
   git clone https://github.com/zhenyu0519/web-api-auth-examples.git &>/dev/null

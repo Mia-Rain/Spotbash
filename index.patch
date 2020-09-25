@@ -29,16 +29,14 @@ index 9c57f1c..0cbcc10 100644
      <script>
        (function() {
  
-@@ -88,9 +92,10 @@
+@@ -88,8 +92,8 @@
  
          var params = getHashParams();
  
 -        var access_token = params.access_token,
 +        const access_token = params.access_token,
              refresh_token = params.refresh_token,
--            error = params.error;
-+            error = params.error,
-+            device_id= device_id;
+             error = params.error;
  
          if (error) {
            alert('There was an error during the authentication');

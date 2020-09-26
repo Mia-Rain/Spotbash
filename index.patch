@@ -1,16 +1,28 @@
 diff --git a/authorization_code/public/index.html b/authorization_code/public/index.html
-index 9c57f1c..a49f78a 100644
+index 9c57f1c..9742959 100644
 --- a/authorization_code/public/index.html
 +++ b/authorization_code/public/index.html
-@@ -3,6 +3,7 @@
+@@ -1,8 +1,9 @@
+ <!doctype html>
+ <html>
    <head>
-     <title>Example of the Authorization Code flow with Spotify</title>
+-    <title>Example of the Authorization Code flow with Spotify</title>
++    <title>Spotbash Playback SDK</title>
      <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
 +    <link rel="icon" href="https://cdn.discordapp.com/attachments/699685435198144553/758393878947561522/spotbash_ex2.png">
      <style type="text/css">
        #login, #loggedin {
          display: none;
-@@ -19,7 +20,6 @@
+@@ -13,13 +14,15 @@
+         white-space: nowrap;
+         width: 500px;
+       }
++      dd#sec {
++        width: 100px;
++      }
+     </style>
+   </head>
+ 
    <body>
      <div class="container">
        <div id="login">
@@ -18,7 +30,17 @@ index 9c57f1c..a49f78a 100644
          <a href="/login" class="btn btn-primary">Log in with Spotify</a>
        </div>
        <div id="loggedin">
-@@ -61,7 +61,13 @@
+@@ -46,6 +49,9 @@
+             <dt>Link</dt><dd><a href="{{href}}">{{href}}</a></dd>
+             <dt>Profile Image</dt><dd class="clearfix"><a href="{{images.0.url}}">{{images.0.url}}</a></dd>
+             <dt>Country</dt><dd>{{country}}</dd>
++	    <dt>Client ID</dt><dd id="CLID"></dd>
++	    <dt>Client Secret</dt><dd id="sec" class="text-overflow"></dd>
++	    <dt>Device ID</dt><dd id="DEVID"></dd>
+           </dl>
+         </div>
+       </div>
+@@ -61,7 +67,15 @@
  
      <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
      <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
@@ -26,13 +48,15 @@ index 9c57f1c..a49f78a 100644
 +    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 +    <script src="https://sdk.scdn.co/spotify-player.js"></script>
      <script>
++     document.getElementById('CLID').innerHTML = client_id;
++     document.getElementById('sec').innerHTML = client_secret;
 +     if (client_id === undefined || client_secret === null) {
 +     	console.log('Help Me');
 +     }
        (function() {
  
          /**
-@@ -88,7 +94,7 @@
+@@ -88,7 +102,7 @@
  
          var params = getHashParams();
  
@@ -41,7 +65,7 @@ index 9c57f1c..a49f78a 100644
              refresh_token = params.refresh_token,
              error = params.error;
  
-@@ -135,7 +141,65 @@
+@@ -135,7 +149,76 @@
              });
            }, false);
          }
@@ -64,6 +88,7 @@ index 9c57f1c..a49f78a 100644
 +      // Ready
 +      player.addListener('ready', ({ device_id }) => {
 +        console.log('Ready with Device ID', device_id);
++      	document.getElementById('DEVID').innerHTML = device_id;
 +      });
 +
 +      // Not Ready
@@ -89,15 +114,25 @@ index 9c57f1c..a49f78a 100644
 +	  console.log('Our refresh_token is ' + refresh_token);
 +	  // If we get 2 weird looking codes in the console, then is fucking worked!
 +	  function refresh() {
-+	  axios({
-+          	method: "post",
-+          	url: "https://accounts.spotify.com/api/token",
-+		client_id: client_id,
-+		client_secret: client_secret,
-+		grant_type: 'refresh_token',
-+		refresh_token: refresh_token,
-+          	headers: { "Content-Type": "application/x-www-form-urlencoded" }
-+          })
++		axios.post(  
++			'https://accounts.spotify.com/api/token',
++			new URLSearchParams({
++				grant_type: "refresh_token",
++			        client_id: client_id,
++			        client_secret: client_secret,
++			        refresh_token: refresh_token  
++			}).toString(),
++		{
++			headers: {
++				'Content-Type': 'application/x-www-form-urlencoded',
++				'Authorization': 'Basic ' + btoa(client_id + ':' + client_secret)
++			},
++		}
++		).then(function (response => { 
++			refresh_token = response.data.refresh_token;                  
++		}) {
++			console.log(response.data);
++		});
 +	  }
 +	  setInterval(refresh, 1000 * 56 * 56);
 +

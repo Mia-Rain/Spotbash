@@ -1,5 +1,5 @@
 diff --git a/authorization_code/app.js b/authorization_code/app.js
-index 8a1634a..8db8b87 100644
+index 8a1634a..73cf8e5 100644
 --- a/authorization_code/app.js
 +++ b/authorization_code/app.js
 @@ -9,13 +9,24 @@
@@ -49,7 +49,7 @@ index 8a1634a..8db8b87 100644
    res.redirect(
      "https://accounts.spotify.com/authorize?" +
        querystring.stringify({
-@@ -99,12 +110,33 @@ app.get("/callback", function(req, res) {
+@@ -99,12 +110,14 @@ app.get("/callback", function(req, res) {
              res.redirect(
                "/#" + querystring.stringify({ access_token, refresh_token })
              );
@@ -60,30 +60,11 @@ index 8a1634a..8db8b87 100644
                "/#" + querystring.stringify({ error: e.response.data })
              );
            });
-+         function refresh() {
-+	 axios.post(
-+		'https://accounts.spotify.com/api/token',
-+		new URLSearchParams({
-+			grant_type: 'refresh_token',
-+			client_id: client_id,
-+			client_secret: client_secret,
-+        		refresh_token: params.refresh_token
-+		}).toString(),
-+		{
-+			headers: {
-+				'Content-Type': 'application/x-www-form-urlencoded',
-+				'Authorization': 'Basic ' + btoa(client_id + ':' + client_secret)
-+			},
-+		})
-+    	.then(response => {
-+        	const access_token = response.data.access_token;
-+    	})
-+	}
-+        setInterval(refresh, 1000 * 56 * 56);
++	// I removed the function from here, as it has 0 effect on the Playback SDK, and is 100% useless
        })
        .catch(e => console.error(e.response.data));
    }
-@@ -137,6 +169,4 @@ app.get("/refresh_token", function(req, res) {
+@@ -137,6 +150,4 @@ app.get("/refresh_token", function(req, res) {
        console.error(e.response.data);
      });
  });

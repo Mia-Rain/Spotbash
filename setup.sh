@@ -28,6 +28,15 @@ else
 fi
 sed -i "s/'id';/'${CLID}';/g" ./app.js
 sed -i "s/'sec';/'${CLSEC}';/g" ./app.js
+
+if [ ! -f $(which npm) ]; then
+  echo "npm is required!"
+  exit 1
+else
+  npm install --save fs
+  npm install --save http
+fi
+
 if [ ! -d ./node_modules ]; then
   cd ./web-api-auth-examples/
   echo "Installing auth examples"

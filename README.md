@@ -51,9 +51,11 @@ play: Play "arg2" | "arg2" must be Album or Playlist URI
 ***
 ```
 ***
-Spotbash is a "Control API" which means it only controls the Spotify placyback of devices. It cannot be used as a standalone player!
-***
-Some usable devices are `librespot`, `Spotify Web Playback SDK`, `Spotifyd`, or any device with a Spotify app. 
+Spotbash is a "Control API" which means it only controls the Spotify placyback of devices. The nodejs server can be used as a standalone player;\ 
+See below.
 ***
 I recommend using `Spotify Web Playback SDK` as a device, as it only requires a spotify compatible browser.\
-Addtionally a Web Playback SDK device is embed into `app.js`, and can be used after running `setup.sh`
+Addtionally a Web Playback SDK implementaion is embedded into `app.js`, and can be used after running `setup.sh`\
+Note that `setup.sh` disowns a `node` process, meaning a `node` process will continue to run in the background until it is killed\
+Closing the Browser Tab will not kill this process!\
+If you have any issues trying to use the Web Playback SDK implementaion please open a issue!

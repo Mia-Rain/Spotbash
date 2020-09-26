@@ -6,3 +6,4 @@ authkeys
 app.js
 public/*
 public/
+package-lock.json

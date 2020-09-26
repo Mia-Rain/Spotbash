@@ -1,8 +1,8 @@
-diff --git a/app.js b/app.js
-index 8a1634a..d535c84 100644
---- a/app.js
-+++ b/app.js
-@@ -13,9 +13,9 @@ const cors = require("cors");
+diff --git a/authorization_code/app.js b/authorization_code/app.js
+index 8a1634a..a01b0ef 100644
+--- a/authorization_code/app.js
++++ b/authorization_code/app.js
+@@ -13,9 +13,19 @@ const cors = require("cors");
  const querystring = require("querystring");
  const cookieParser = require("cookie-parser");
  
@@ -12,10 +12,20 @@ index 8a1634a..d535c84 100644
 +const client_id = 'id'; // Your client id
 +const client_secret = 'sec'; // Your secret
 +const redirect_uri = 'http://localhost:5000/callback'; // Your redirect uri
++
++// We need to pass though some variables, into '/public/index.html's script, I've tried everything, last try
++const fs = require('fs');
++const http = require('http');
++//
++
++       // Let's hope this shit works
++       var content = ('const client_id = ' + '"' + client_id + '";' + '\n' + 'const client_secret = ' + '"' + client_secret + '";' + '\n' + 'console.log("client_id is: " + client_id + "\\n client_secret is: " + client_secret);');
++       fs.writeFile('./public/consts.js', content, function (err) {
++                if (err) throw err;});
  
  /**
   * Generates a random string containing numbers and letters
-@@ -47,7 +47,7 @@ app.get("/login", function(req, res) {
+@@ -47,7 +57,7 @@ app.get("/login", function(req, res) {
    res.cookie(stateKey, state);
  
    // your application requests authorization
@@ -24,43 +34,33 @@ index 8a1634a..d535c84 100644
    res.redirect(
      "https://accounts.spotify.com/authorize?" +
        querystring.stringify({
-@@ -66,6 +66,9 @@ app.get("/callback", function(req, res) {
-   let code = req.query.code || null;
-   let state = req.query.state || null;
-   let storedState = req.cookies ? req.cookies[stateKey] : null;
-+  let client_id = client_id || MISSING;
-+  let client_secret = client_secret || MISSING;
-+  let redirect_uri = redirect_uri || 'http://localhost:5000/callback';
- 
-   if (state === null || state !== storedState) {
-     res.redirect("/#" + querystring.stringify({ error: "state_mismatch" }));
-@@ -99,12 +102,25 @@ app.get("/callback", function(req, res) {
+@@ -99,12 +109,25 @@ app.get("/callback", function(req, res) {
              res.redirect(
                "/#" + querystring.stringify({ access_token, refresh_token })
              );
-+	  console.log('REKEY=' + refresh_token);
++	 console.log('REKEY=' + refresh_token);
            })
            .catch(e => {
              res.redirect(
                "/#" + querystring.stringify({ error: e.response.data })
              );
            });
-+	  function refresh() {
-+	  axios({
-+          	method: "post",
-+          	url: "https://accounts.spotify.com/api/token",
-+		client_id: client_id,
-+		client_secret: client_secret,
-+		grant_type: 'refresh_token',
-+		refresh_token: refresh_token,
-+          	headers: { "Content-Type": "application/x-www-form-urlencoded" }
++         function refresh() {
++         axios({
++               method: "post",
++               url: "https://accounts.spotify.com/api/token",
++               client_id: client_id,
++               client_secret: client_secret,
++               grant_type: 'refresh_token',
++               refresh_token: refresh_token,
++               headers: { "Content-Type": "application/x-www-form-urlencoded" }
 +          })
-+	  }
-+	  setInterval(refresh, 1000 * 56 * 56);
++         }
++         setInterval(refresh, 1000 * 56 * 56);
        })
        .catch(e => console.error(e.response.data));
    }
-@@ -137,6 +153,4 @@ app.get("/refresh_token", function(req, res) {
+@@ -137,6 +160,4 @@ app.get("/refresh_token", function(req, res) {
        console.error(e.response.data);
      });
  });

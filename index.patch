@@ -1,8 +1,16 @@
-diff --git a/public/index.html b/public/index.html
-index 9c57f1c..0cbcc10 100644
---- a/public/index.html
-+++ b/public/index.html
-@@ -19,7 +19,6 @@
+diff --git a/authorization_code/public/index.html b/authorization_code/public/index.html
+index 9c57f1c..a49f78a 100644
+--- a/authorization_code/public/index.html
++++ b/authorization_code/public/index.html
+@@ -3,6 +3,7 @@
+   <head>
+     <title>Example of the Authorization Code flow with Spotify</title>
+     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
++    <link rel="icon" href="https://cdn.discordapp.com/attachments/699685435198144553/758393878947561522/spotbash_ex2.png">
+     <style type="text/css">
+       #login, #loggedin {
+         display: none;
+@@ -19,7 +20,6 @@
    <body>
      <div class="container">
        <div id="login">
@@ -10,26 +18,21 @@ index 9c57f1c..0cbcc10 100644
          <a href="/login" class="btn btn-primary">Log in with Spotify</a>
        </div>
        <div id="loggedin">
-@@ -46,6 +45,9 @@
-             <dt>Link</dt><dd><a href="{{href}}">{{href}}</a></dd>
-             <dt>Profile Image</dt><dd class="clearfix"><a href="{{images.0.url}}">{{images.0.url}}</a></dd>
-             <dt>Country</dt><dd>{{country}}</dd>
-+	    <dt>ID</dt><dd>{{client_id}}</dd>
-+	    <dt>Secret</dt>{{client_id}}</dd>
-+	    <dt>Device</dt>{{device_id}}</dd>
-           </dl>
-         </div>
-       </div>
-@@ -61,6 +63,8 @@
+@@ -61,7 +61,13 @@
  
      <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
      <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
++    <script src="/consts.js"></script>
 +    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 +    <script src="https://sdk.scdn.co/spotify-player.js"></script>
      <script>
++     if (client_id === undefined || client_secret === null) {
++     	console.log('Help Me');
++     }
        (function() {
  
-@@ -88,8 +92,8 @@
+         /**
+@@ -88,7 +94,7 @@
  
          var params = getHashParams();
  
@@ -38,9 +41,7 @@ index 9c57f1c..0cbcc10 100644
              refresh_token = params.refresh_token,
              error = params.error;
  
-         if (error) {
-           alert('There was an error during the authentication');
-@@ -135,7 +140,62 @@
+@@ -135,7 +141,65 @@
              });
            }, false);
          }
@@ -84,6 +85,9 @@ index 9c57f1c..0cbcc10 100644
 +  }
 +this.state = state;
 +});
++	  console.log('Is ' + client_id + ' the client_id?' + '\n Is ' + client_secret + ' the client_secret?');
++	  console.log('Our refresh_token is ' + refresh_token);
++	  // If we get 2 weird looking codes in the console, then is fucking worked!
 +	  function refresh() {
 +	  axios({
 +          	method: "post",

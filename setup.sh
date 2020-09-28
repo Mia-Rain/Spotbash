@@ -32,8 +32,9 @@ sed -i "s/'sec';/'${CLSEC}';/g" ./app.js
 if [ ! -f $(which npm) ]; then
   echo "npm is required!"
   exit 1
-else
+elif [ ! -d ./node_modules/fs ]; then
   npm install --save fs
+elif [ ! -d ./node_modules/http ]; then
   npm install --save http
 fi
 

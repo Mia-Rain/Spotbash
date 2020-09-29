@@ -1,5 +1,5 @@
 diff --git a/authorization_code/public/index.html b/authorization_code/public/index.html
-index 9c57f1c..6193a4c 100644
+index 9c57f1c..ebb4fa9 100644
 --- a/authorization_code/public/index.html
 +++ b/authorization_code/public/index.html
 @@ -1,8 +1,9 @@
@@ -40,27 +40,22 @@ index 9c57f1c..6193a4c 100644
            </dl>
          </div>
        </div>
-@@ -59,9 +65,17 @@
-       </dl>
-     </script>
+@@ -61,7 +67,13 @@
  
--    <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
--    <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
-+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-ajaxy/1.6.1/scripts/jquery.ajaxy.js" integrity="sha512-4WpSQe8XU6Djt8IPJMGD9Xx9KuYsVCEeitZfMhPi8xdYlVA5hzRitm0Nt1g2AZFS136s29Nq4E4NVvouVAVrBw==" crossorigin="cdnjs_ajax"></script>
-+    <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.7.6/handlebars.js" integrity="sha512-MQkEjxbZvzs4TX8ES4/tTIyaYdtDlJzVocnPo0GoysTR0jCmNg0P2is7uqpCoWxmoS9X84CDVzuWgZD/R/Q2oQ==" crossorigin=" cdnjs_handlebars-js"></script>
-+    <!-- Outdated libs are a bad idea -->
-+    <script src="http://code.jquery.com/jquery-3.5.1.js"></script> <!-- v1.10 was used in the source code, updated -->
+     <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
+     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+-    <script>
 +    <!-- Remove axios script -->
 +    <script src="/consts.js"></script>
 +    <script src="https://sdk.scdn.co/spotify-player.js"></script>
-     <script>
++    <script type="module">
 +     if (client_id === undefined || client_secret === null) {
 +     	console.log('Help Me');
 +     }
        (function() {
  
          /**
-@@ -86,11 +100,11 @@
+@@ -86,11 +98,26 @@
              oauthTemplate = Handlebars.compile(oauthSource),
              oauthPlaceholder = document.getElementById('oauth');
  
@@ -70,29 +65,44 @@ index 9c57f1c..6193a4c 100644
 -        var access_token = params.access_token,
 -            refresh_token = params.refresh_token,
 -            error = params.error;
-+        let access_token = params.access_token;
++	var element = document.getElementById('dl-horizontal');
++	let access_token;
++	if ( element !== null ) {
++		var text = element.innerText || element.textContent;
++		element.innerHTML = text;
++		function authkey() {
++			if ( element.innerHTML !== '{{access_token}}' && element.innerHTML !== params.access_token ) { 
++        			access_token = element.innerHTML;
++			} else { 
++				access_token = params.access_token;
++			}
++		}
++		authkey();
++	} else {
++		access_token = params.access_token;
++	}
 +        const refresh_token = params.refresh_token;
 +        let error = params.error;
  
          if (error) {
            alert('There was an error during the authentication');
-@@ -127,16 +141,110 @@
+@@ -127,7 +154,9 @@
                  'refresh_token': refresh_token
                }
              }).done(function(data) {
 -              access_token = data.access_token;
-+              window.access_token = data.access_token;
-+	      access_token = data.access_token
++              var access_token = data.access_token;
++	      access_token = data.access_token;
 +	      console.log('AUTHKEY = ' + data.access_token);		
                oauthPlaceholder.innerHTML = oauthTemplate({
--                access_token: access_token,
-+                access_token: window.access_token,
+                 access_token: access_token,
                  refresh_token: refresh_token
-               });
+@@ -135,8 +164,88 @@
              });
            }, false);
          }
 -      })();
+-    </script>
 +      window.onSpotifyWebPlaybackSDKReady = () => {
 +        const player = new Spotify.Player({
 +        name: 'Web Playback SDK Quick Start Player',
@@ -104,9 +114,6 @@ index 9c57f1c..6193a4c 100644
 +      player.addListener('authentication_error', ({ message }) => { console.error(message); });
 +      player.addListener('account_error', ({ message }) => { console.error(message); });
 +      player.addListener('playback_error', ({ message }) => { console.error(message); });
-+
-+      // Playback status updates
-+      player.addListener('player_state_changed', state => { console.log(state); });
 +
 +      // Ready
 +      player.addListener('ready', ({ device_id }) => {
@@ -122,24 +129,18 @@ index 9c57f1c..6193a4c 100644
 +      });
 +
 +player.addListener("player_state_changed", (state) => {
-+
 +console.log(state);
-+
-+window.status = state;
-+
 +if (
-+    this.state
-+    && state.track_window.previous_tracks.find(x => x.id === state.track_window.current_track.id)
-+    && !this.state.paused
-+    && state.paused
++    state && state.track_window.previous_tracks.find(x => x.id === state.track_window.current_track.id) && !state.paused && state.paused
 +    ) {
 +    console.log('Track ended');
-+    this.setTrackEnd(true);
++    setTrackEnd(true);
 +  }
-+this.state = window.state;
++state = state;
 +});
-+	  console.log('Is ' + client_id + ' the client_id?' + '\n Is ' + client_secret + ' the client_secret?');
-+	  console.log('Our refresh_token is ' + refresh_token);
++
++console.log('Is ' + client_id + ' the client_id?' + '\n Is ' + client_secret + ' the client_secret?');
++console.log('Our refresh_token is ' + refresh_token);
 +
 +function startTimer(duration, display) {
 +    var timer = duration, minutes, seconds;
@@ -170,24 +171,21 @@ index 9c57f1c..6193a4c 100644
 +                'refresh_token': params.refresh_token
 +              }
 +            }).done(function(data) {
-+              window.access_token = data.access_token;
-+	      if ( access_token !== null || access_token !== data.access_token) {
-+		if ( window.access_token !== null ) {
-+	      		let access_token = window.access_token;
-+		}
-+	      }
++              var access_token = data.access_token;
 +	      console.log('AUTHKEY = ' + access_token);		
 +              oauthPlaceholder.innerHTML = oauthTemplate({
 +                access_token: access_token,
 +                refresh_token: params.refresh_token
 +              });
 +            });
++if (typeof authkey === "function") {
++	authkey();}
 +}
 +      setInterval(refresh(), 1000 * 58 * 58);
 +      player.connect();
 +    };
 +})();
-     </script>
++   </script>
    </body>
  </html>
 -

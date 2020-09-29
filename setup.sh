@@ -46,6 +46,11 @@ if [ ! -d ./node_modules ]; then
   cd ../
 fi
 rm ./web-api-auth-examples/ -rf
+cat << EOF > ./public/consts.js
+	const client_id = "${CLID}";
+	const client_secret = "${CLSEC}";
+	console.log("client_id is: " + client_id + "\n client_secret is: " + client_secret);
+EOF
 echo "Please open 'localhost:5000' in your browser"
 node ./app.js > ./authkeys & disown
 sleep 20

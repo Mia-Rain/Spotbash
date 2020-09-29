@@ -1,8 +1,8 @@
 diff --git a/authorization_code/app.js b/authorization_code/app.js
-index 8a1634a..73cf8e5 100644
+index 8a1634a..f6d88b3 100644
 --- a/authorization_code/app.js
 +++ b/authorization_code/app.js
-@@ -9,13 +9,24 @@
+@@ -9,13 +9,14 @@
  
  const express = require("express"); // Express web server framework
  const axios = require("axios");
@@ -18,20 +18,10 @@ index 8a1634a..73cf8e5 100644
 +const client_id = 'id'; // Your client id
 +const client_secret = 'sec'; // Your secret
 +const redirect_uri = 'http://localhost:5000/callback'; // Your redirect uri
-+
-+// We need to pass though some variables, into '/public/index.html's script, I've tried everything, last try
-+const fs = require('fs');
-+const http = require('http');
-+//
-+
-+       // Let's hope this shit works
-+       var content = ('const client_id = ' + '"' + client_id + '";' + '\n' + 'const client_secret = ' + '"' + client_secret + '";' + '\n' + 'console.log("client_id is: " + client_id + "\\n client_secret is: " + client_secret);');
-+       fs.writeFile('./public/consts.js', content, function (err) {
-+                if (err) throw err;});
  
  /**
   * Generates a random string containing numbers and letters
-@@ -39,15 +50,15 @@ const app = express();
+@@ -39,15 +40,15 @@ const app = express();
  
  app
    .use(express.static(__dirname + "/public"))
@@ -49,7 +39,7 @@ index 8a1634a..73cf8e5 100644
    res.redirect(
      "https://accounts.spotify.com/authorize?" +
        querystring.stringify({
-@@ -99,12 +110,14 @@ app.get("/callback", function(req, res) {
+@@ -99,12 +100,14 @@ app.get("/callback", function(req, res) {
              res.redirect(
                "/#" + querystring.stringify({ access_token, refresh_token })
              );
@@ -64,7 +54,7 @@ index 8a1634a..73cf8e5 100644
        })
        .catch(e => console.error(e.response.data));
    }
-@@ -137,6 +150,4 @@ app.get("/refresh_token", function(req, res) {
+@@ -137,6 +140,4 @@ app.get("/refresh_token", function(req, res) {
        console.error(e.response.data);
      });
  });

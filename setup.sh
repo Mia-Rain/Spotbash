@@ -38,7 +38,7 @@ elif [ ! -d ./node_modules/http ]; then
   npm install --save http
 fi
 
-if [ ! -d ./node_modules ]; then
+if [ $(ls ./node_modules/ | wc -l) != 54 ]; then
   cd ./web-api-auth-examples/
   echo "Installing auth examples"
   npm install &>/dev/null

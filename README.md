@@ -62,5 +62,5 @@ Addtionally a Web Playback SDK implementaion is embedded into `app.js`, and can 
 Note that `setup.sh` disowns a `node` process, meaning a `node` process will continue to run in the background until it is killed
 
 Closing the Browser Tab will not kill this process!\
-If playback ends for an unknown reason, please press `"Obtain new token using the refresh token"`\
 If you have any issues trying to use the Web Playback SDK implementaion please open a issue!
+> Please do not open any issues regarding authorization failure, this is most likely due to the lifetime of an oauth key being only 1 hour long.

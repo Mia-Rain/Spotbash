@@ -7,13 +7,12 @@ The development of Spotbash has ended indefinitely, but if anything is missing, 
 > ***
 
 #### Things that are missing
-Several things are missing from Spotbash, here are a few;
-Follow support (Users cannot Follow playlists, albums or artists using Spotbash)
+Several things are missing from Spotbash, here are a few;\
+Follow support (Users cannot Follow playlists, albums or artists using Spotbash)\
 > Heart/Like support (No ability to like tracks or add them to a certain playlist is implemented)
 
-Playlist editing/creation (Playlists can only be played from)
+Playlist editing/creation (Playlists can only be played from)\
 Modify support (The ability to modify playlists, is currently on supported)
-etc.
 > There are many more things that could/should be implemented, but this is simply a control API and was only meant to be a proof of concept, as well as a response to a joke a friend made.
 ```
 Spotify client written in shell when lmao

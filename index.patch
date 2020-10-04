@@ -1,17 +1,28 @@
-diff --git a/public/index.html b/public/index.html
-index 9c57f1c..5fc2c06 100644
---- a/public/index.html
-+++ b/public/index.html
-@@ -1,7 +1,7 @@
+diff --git a/authorization_code/public/index.html b/authorization_code/public/index.html
+index 9c57f1c..ebb4fa9 100644
+--- a/authorization_code/public/index.html
++++ b/authorization_code/public/index.html
+@@ -1,8 +1,9 @@
  <!doctype html>
  <html>
    <head>
 -    <title>Example of the Authorization Code flow with Spotify</title>
-+    <title>Authorization</title>
++    <title>Spotbash Playback SDK</title>
      <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
++    <link rel="icon" href="https://cdn.discordapp.com/attachments/699685435198144553/758393878947561522/spotbash_ex2.png">
      <style type="text/css">
        #login, #loggedin {
-@@ -19,7 +19,6 @@
+         display: none;
+@@ -13,13 +14,15 @@
+         white-space: nowrap;
+         width: 500px;
+       }
++      dd#sec {
++        width: 100px;
++      }
+     </style>
+   </head>
+ 
    <body>
      <div class="container">
        <div id="login">
@@ -19,3 +30,162 @@ index 9c57f1c..5fc2c06 100644
          <a href="/login" class="btn btn-primary">Log in with Spotify</a>
        </div>
        <div id="loggedin">
+@@ -46,6 +49,9 @@
+             <dt>Link</dt><dd><a href="{{href}}">{{href}}</a></dd>
+             <dt>Profile Image</dt><dd class="clearfix"><a href="{{images.0.url}}">{{images.0.url}}</a></dd>
+             <dt>Country</dt><dd>{{country}}</dd>
++	    <dt>Client ID</dt><dd id="CLID"></dd>
++	    <dt>Client Secret</dt><dd id="sec" class="text-overflow"></dd>
++	    <dt>Device ID</dt><dd id="DEVID"></dd>
+           </dl>
+         </div>
+       </div>
+@@ -61,7 +67,13 @@
+ 
+     <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
+     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+-    <script>
++    <!-- Remove axios script -->
++    <script src="/consts.js"></script>
++    <script src="https://sdk.scdn.co/spotify-player.js"></script>
++    <script type="module">
++     if (client_id === undefined || client_secret === null) {
++     	console.log('Help Me');
++     }
+       (function() {
+ 
+         /**
+@@ -86,11 +98,26 @@
+             oauthTemplate = Handlebars.compile(oauthSource),
+             oauthPlaceholder = document.getElementById('oauth');
+ 
+-        var params = getHashParams();
++        const params = getHashParams();
+ 
+-        var access_token = params.access_token,
+-            refresh_token = params.refresh_token,
+-            error = params.error;
++	var element = document.getElementById('dl-horizontal');
++	let access_token;
++	if ( element !== null ) {
++		var text = element.innerText || element.textContent;
++		element.innerHTML = text;
++		function authkey() {
++			if ( element.innerHTML !== '{{access_token}}' && element.innerHTML !== params.access_token ) { 
++        			access_token = element.innerHTML;
++			} else { 
++				access_token = params.access_token;
++			}
++		}
++		authkey();
++	} else {
++		access_token = params.access_token;
++	}
++        const refresh_token = params.refresh_token;
++        let error = params.error;
+ 
+         if (error) {
+           alert('There was an error during the authentication');
+@@ -127,7 +154,9 @@
+                 'refresh_token': refresh_token
+               }
+             }).done(function(data) {
+-              access_token = data.access_token;
++              var access_token = data.access_token;
++	      access_token = data.access_token;
++	      console.log('AUTHKEY = ' + data.access_token);		
+               oauthPlaceholder.innerHTML = oauthTemplate({
+                 access_token: access_token,
+                 refresh_token: refresh_token
+@@ -135,8 +164,88 @@
+             });
+           }, false);
+         }
+-      })();
+-    </script>
++      window.onSpotifyWebPlaybackSDKReady = () => {
++        const player = new Spotify.Player({
++        name: 'Web Playback SDK Quick Start Player',
++        getOAuthToken: cb => { cb(access_token); }
++      });
++
++      // Error handling
++      player.addListener('initialization_error', ({ message }) => { console.error(message); });
++      player.addListener('authentication_error', ({ message }) => { console.error(message); });
++      player.addListener('account_error', ({ message }) => { console.error(message); });
++      player.addListener('playback_error', ({ message }) => { console.error(message); });
++
++      // Ready
++      player.addListener('ready', ({ device_id }) => {
++        console.log('Ready with Device ID', device_id);
++      	document.getElementById('DEVID').innerHTML = device_id;
++	document.getElementById('CLID').innerHTML = client_id;
++        document.getElementById('sec').innerHTML = client_secret;
++      });
++
++      // Not Ready
++      player.addListener('not_ready', ({ device_id }) => {
++        console.log('Device ID has gone offline', device_id);
++      });
++
++player.addListener("player_state_changed", (state) => {
++console.log(state);
++if (
++    state && state.track_window.previous_tracks.find(x => x.id === state.track_window.current_track.id) && !state.paused && state.paused
++    ) {
++    console.log('Track ended');
++    setTrackEnd(true);
++  }
++state = state;
++});
++
++console.log('Is ' + client_id + ' the client_id?' + '\n Is ' + client_secret + ' the client_secret?');
++console.log('Our refresh_token is ' + refresh_token);
++
++function startTimer(duration, display) {
++    var timer = duration, minutes, seconds;
++    setInterval(function () {
++        minutes = parseInt(timer / 60, 10);
++        seconds = parseInt(timer % 60, 10);
++
++        minutes = minutes < 10 ? "0" + minutes : minutes;
++        seconds = seconds < 10 ? "0" + seconds : seconds;
++
++        display.textContent = minutes + ":" + seconds;
++
++        if (--timer < 0) {
++            timer = duration;
++        }
++    }, 1000);
++}
++
++window.onload = function () {
++	var fiveMinutes = 60 * 5,
++        display = document.querySelector('#time');
++    	startTimer(fiveMinutes, display);
++};
++function refresh() {
++$.ajax({
++              url: '/refresh_token',
++              data: {
++                'refresh_token': params.refresh_token
++              }
++            }).done(function(data) {
++              var access_token = data.access_token;
++	      console.log('AUTHKEY = ' + access_token);		
++              oauthPlaceholder.innerHTML = oauthTemplate({
++                access_token: access_token,
++                refresh_token: params.refresh_token
++              });
++            });
++if (typeof authkey === "function") {
++	authkey();}
++}
++      setInterval(refresh(), 1000 * 58 * 58);
++      player.connect();
++    };
++})();
++   </script>
+   </body>
+ </html>
+-

@@ -1,31 +1,32 @@
-# Spotbash
-NOTE: Development of Spotbash is currently paused, while a proper environment for it's testing is created.
-***
-<p>
-<p>
-		<img src="https://cdn.discordapp.com/attachments/699685435198144553/758393878947561522/spotbash_ex2.png" width="27%" align="right"> 
-	</p>
-	Spotify Control API ~ Written in bash, using curl.
-</p>
+
+<h1> Spotbash </h1><p><p><img src="https://cdn.discordapp.com/attachments/699685435198144553/758393878947561522/spotbash_ex2.png" width="15%" align="right"> </p>Spotify Control API ~ Written in bash, using curl.</p>
 
 ***
-#### TODO
-- [ ] Add play `artist` suport
-- [ ] Add `album` search support
+### Pull Requests
+The development of Spotbash has ended indefinitely, but if anything is missing, or you might want to see, open a PR, I'll review it and merge it!
+> ***
 
-:x: Add *any* modify support
-> Modify support seems to need to be done server side, support for it is currently on hold.
+#### Things that are missing
+Several things are missing from Spotbash, here are a few;
+Follow support (Users cannot Follow playlists, albums or artists using Spotbash)
+> Heart/Like support (No ability to like tracks or add them to a certain playlist is implemented)
 
-- [ ] Add functional Web SDK device into `app.js`
+Playlist editing/creation (Playlists can only be played from)
+Modify support (The ability to modify playlists, is currently on supported)
+etc.
+> There are many more things that could/should be implemented, but this is simply a control API and was only meant to be a proof of concept, as well as a response to a joke a friend made.
+```
+Spotify client written in shell when lmao
+```
 ***
 ## Setup
 1. Go to the [developer dashboard](https://developer.spotify.com/dashboard/applications) and create a new app.
 2. Remember the `Client ID` and the `Client Secret`\
 2a. Open settings and add `http://localhost:5000/` to the redircet_uri whitelist
-> Optionally edit `app.patch` to change the scopes, currently all non-follow scopes are used.
-3. `bash ./setup.sh`
+> Optionally edit `app.patch` to change the scopes, currently, all non-follow scopes are used.
+3. `./setup.sh`
 ## Usage
-1. `bash ./spotbash help`
+1. `./spotbash help`
 ```
 spotbash: Spotify Control API ~ Written in bash
 Usage: spotbash:
@@ -55,11 +56,16 @@ play: Play "arg2" | "arg2" must be Album or Playlist URI
 ***
 ```
 ***
-Spotbash is a "Control API" which means it only controls the Spotify placyback of devices. It cannot be used as a standalone player!
+Spotbash is a "Control API" which means it only controls the Spotify playback of devices. The nodejs server can be used as a standalone player;
+
+See below.
 ***
-Some usable devices are `librespot`, `Spotify Web Playback SDK`, `Spotifyd`, or any device with a Spotify app. 
-***
-I recommend using `Spotify Web Playback SDK` as a device, as it only requires a spotify compatible browser, and can be edited to support track based repeat.\
-The linked `index.html` requires one to run `./spotbash auth` and copy the token to `const token = '*';`, found within the `index.html` file.\
-NOTE: Playback can only last 1 hour as the oauth token expires in 1 hour of creation.
-> [`index.html` (Click Me)](https://cdn.discordapp.com/attachments/699685435198144553/758540007572373514/index.html)
+I recommend using `Spotify Web Playback SDK` as a device, as it only requires a Spotify compatible browser.  
+
+Additionally, a Web Playback SDK implementation is embedded into `app.js`, and can be used after running `setup.sh`
+
+Note that `setup.sh` disowns a `node` process, meaning a `node` process will continue to run in the background until it is killed
+
+Closing the Browser Tab will not kill this process!\
+If you have any issues trying to use the Web Playback SDK implementation please open an issue!
+> Please do not open any issues regarding authorization failure, this is most likely due to the lifetime of an OAuth key being only 1 hour long.

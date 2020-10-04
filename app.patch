@@ -1,71 +1,64 @@
-diff --git a/app.js b/app.js
-index 9b8a6b5..ab04852 100644
---- a/app.js
-+++ b/app.js
-@@ -13,9 +13,9 @@ var cors = require('cors');
- var querystring = require('querystring');
- var cookieParser = require('cookie-parser');
+diff --git a/authorization_code/app.js b/authorization_code/app.js
+index 8a1634a..f6d88b3 100644
+--- a/authorization_code/app.js
++++ b/authorization_code/app.js
+@@ -9,13 +9,14 @@
  
--var client_id = 'CLIENT_ID'; // Your client id
--var client_secret = 'CLIENT_SECRET'; // Your secret
--var redirect_uri = 'REDIRECT_URI'; // Your redirect uri
-+var client_id = 'id'; // Your client id
-+var client_secret = 'sec'; // Your secret
-+var redirect_uri = 'http://localhost:5000/callback'; // Your redirect uri
+ const express = require("express"); // Express web server framework
+ const axios = require("axios");
+-const cors = require("cors");
+ const querystring = require("querystring");
+ const cookieParser = require("cookie-parser");
++/// CORS breaks, like everything I try to do browser side
++/// So, no more CORS + It doesn't matter, since this is a opensource project, and it's up to the user to protect their client_secret
+ 
+-const client_id = "CLIENT_ID"; // Your client id
+-const client_secret = "CLIENT_SECRET"; // Your secret
+-const redirect_uri = "REDIRECT_URI"; // Your redirect uri
++const client_id = 'id'; // Your client id
++const client_secret = 'sec'; // Your secret
++const redirect_uri = 'http://localhost:5000/callback'; // Your redirect uri
  
  /**
   * Generates a random string containing numbers and letters
-@@ -46,7 +46,8 @@ app.get('/login', function(req, res) {
+@@ -39,15 +40,15 @@ const app = express();
+ 
+ app
+   .use(express.static(__dirname + "/public"))
+-  .use(cors())
+   .use(cookieParser());
++// Again, no more CORS
+ 
+ app.get("/login", function(req, res) {
+   let state = generateRandomString(16);
    res.cookie(stateKey, state);
  
    // your application requests authorization
--  var scope = 'user-read-private user-read-email';
-+  var scope = 'user-read-private user-read-email user-library-read playlist-modify-private user-read-currently-playing user-modify-playback-state playlist-read-collaborative user-read-playback-state streaming playlist-read-private';
-+  // The above scopes are for all purposes, and should be edited to meet the users needs
-   res.redirect('https://accounts.spotify.com/authorize?' +
-     querystring.stringify({
-       response_type: 'code',
-@@ -81,7 +81,7 @@ app.get('/callback', function(req, res) {
-         grant_type: 'authorization_code'
-       },
-       headers: {
--        'Authorization': 'Basic ' + (new Buffer(client_id + ':' + client_secret).toString('base64'))
-+        'Authorization': 'Basic ' + (Buffer.from(client_id + ':' + client_secret).toString('base64'))
-       },
-       json: true
-     };
-@@ -100,7 +100,6 @@ app.get('/callback', function(req, res) {
- 
-         // use the access token to access the Spotify Web API
-         request.get(options, function(error, response, body) {
--          console.log(body);
-         });
- 
-         // we can also pass the token to the browser to make requests from there
-@@ -115,6 +114,9 @@ app.get('/callback', function(req, res) {
-             error: 'invalid_token'
-           }));
-       }
-+ 	 console.log('%')
-+    console.log(refresh_token);
-+    process.exit();
-     });
+-  let scope = "user-read-private user-read-email";
++  let scope = 'user-read-private user-read-email user-library-read playlist-modify-private user-read-currently-playing user-modify-playback-state playlist-read-collaborative user-read-playback-state streaming playlist-read-private';
+   res.redirect(
+     "https://accounts.spotify.com/authorize?" +
+       querystring.stringify({
+@@ -99,12 +100,14 @@ app.get("/callback", function(req, res) {
+             res.redirect(
+               "/#" + querystring.stringify({ access_token, refresh_token })
+             );
++	 console.log('REKEY=' + refresh_token);
+           })
+           .catch(e => {
+             res.redirect(
+               "/#" + querystring.stringify({ error: e.response.data })
+             );
+           });
++	// I removed the function from here, as it has 0 effect on the Playback SDK, and is 100% useless
+       })
+       .catch(e => console.error(e.response.data));
    }
- });
-@@ -125,7 +127,7 @@ app.get('/refresh_token', function(req, res) {
-   var refresh_token = req.query.refresh_token;
-   var authOptions = {
-     url: 'https://accounts.spotify.com/api/token',
--    headers: { 'Authorization': 'Basic ' + (new Buffer(client_id + ':' + client_secret).toString('base64')) },
-+    headers: { 'Authorization': 'Basic ' + (Buffer.from(client_id + ':' + client_secret).toString('base64')) },
-     form: {
-       grant_type: 'refresh_token',
-       refresh_token: refresh_token
-@@ -142,6 +144,4 @@ app.get('/refresh_token', function(req, res) {
-     }
-   });
+@@ -137,6 +140,4 @@ app.get("/refresh_token", function(req, res) {
+       console.error(e.response.data);
+     });
  });
 -
--console.log('Listening on 8888');
+-console.log("Listening on 8888");
 -app.listen(8888);
 +app.listen(5000);

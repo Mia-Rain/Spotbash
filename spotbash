@@ -53,16 +53,29 @@ devices(){
 set_volume(){
     curl -s -X PUT -d device_id=$id -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/me/player/volume?volume_percent=$2"
 }
-search(){
+search_track(){
+    IFS=""
     if [ -f ${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search ]; then
         source ${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search
     else
         search="$2"
     fi
-    if [ $(echo $search | grep -q '[[:space:]]') ]; then
-        search=$(echo -n $search | sed 's/ /%20/g')
+    if [ ! $(echo $search | grep -q '[[:space:]]') ]; then
+      search=$(echo -n $search | sed 's/[[:space:]]/%20/g')
     fi
-    curl -s X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${search}&limit=1&type=track" | jq -M '.tracks' | jq ".items,del(.[])" -M| sed -e '0,/\[/{s/\[//}' -e '/{}/d' | sed -z -e 's/\}\n\]/\}/g' | jq -M 'del(.["album", "artists", "available_markets", "external_urls", "external_ids"])' | sed '/\},$/d' | jq -M 'del(.["disc_number", "duration_ms", "explicit", "href", "id", "is_local", "popularity", "type", "preview_url", "track_number"])' | sed -e 's/\}//g' -e 's/{//g' -e '/^[[:space:]]*$/d' -e 's/"//g' -e 's/,//g' -e 's/^[ \t]*//' -e 's/name/Name/g'
+    curl -s X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${search}&limit=9&type=track" | jq -M '.tracks' | jq '.items,del(.[]) | [.[] | .name,[.artists | .[] | .["name"]],.uri]' |  sed -z 's/\[]\n//g' | sed -e 's/\[//g' -e 's/]//g' -e '/^[[:space:]]*$/d' -e 's/,//g' -e 's/  "//g' -e 's/"//g' -e '/^ *$/d' | sed -z -e 's/\n  /  By: /g' -e 's/\nspotify:/ @ spotify:/g'
+}
+search_album(){
+        IFS=""
+    if [ -f ${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search ]; then
+        source ${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search
+    else
+        search="$2"
+    fi
+    if [ ! $(echo $search | grep -q '[[:space:]]') ]; then
+      search=$(echo -n $search | sed 's/[[:space:]]/%20/g')
+    fi
+    curl -s X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${search}&limit=9&type=album" | jq '.[] | .items | .[] | .["name"],[ .artists | .[] | .name ],.["uri"]' -M -r | sed -e 's/\[//g' -e 's/\]//g' -e '/^[[:space:]]*$/d' -e 's/,//g' -e 's/"//g' -e '/^ *$/d' | sed -z -e 's/\n  /  By: /g' -e 's/\nspotify:/ @ spotify:/g'
 }
 auth(){
   export "$(curl X POST -d grant_type=refresh_token -d refresh_token=$REKEY -d client_id=$CLID -d client_secret=$CLSEC https://accounts.spotify.com/api/token -s | jq '.access_token' -M | sed '0,/\"/{s/\"/AUTHKEY="/}' | sed 's/\"//g')"
@@ -100,17 +113,21 @@ playlists(){
 play(){
     curl -X "PUT" "https://api.spotify.com/v1/me/player/play?device_${id}" --data "{\"context_uri\":\$2\"}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
 }
+kill_node(){
+    pkill node
+}
 help(){
 		cat << EOF
 ${0##*/}: Spotify Control API ~ Written in bash
 Usage: ${0##*/}:
-[auth|device|search_play|search|play_track|get_volume|set_volume|get_info|previous|skip|pause|resume|loop|repeat|state|set|playlists|play]
+[auth|device|search_*|play_track|get_volume|set_volume|get_info|previous|skip|pause|resume|loop|repeat|state|set|playlists|play|kill_node]
 ***
 auth: Print AUTHKEY and exit
 device: Print first device ID and exit
 devices: List ALL devices and exit
 search_play: Search for "arg2" and play
-search: Search for "arg2" and output URI & NAME
+search_track: Search for "arg2" and output URI & Artist & name | "arg2" is interpreted as a track
+search_album: Seach for "arg2" and output URI, Artist, & name | "arg2" is interpreted as a album
 play_track: Play URI
 get_volume: Output player volume and exit
 set_volume: Set player volume to "arg2" and exit
@@ -127,6 +144,7 @@ repeat_state: Output playback repeat status and exit
 set: Move playback to "arg2" | "arg2" must be a device ID
 playlists: Output list of users playlists and exit
 play: Play "arg2" | "arg2" must be Album or Playlist URI
+kill_node: Can be used to quickly kill any node processes | used to kill SDK server
 ***
 EOF
 }
@@ -144,11 +162,14 @@ if [ $1 = "search_play" ]; then
     play_track
     exit 0
 fi
-${1} $@
-if [ $? != "0" ]; then
-    echo "ERROR: Something went wrong!"
-    echo "Possible issues are:"
-    echo "1. A device may not currently be seleted"
-    echo "2. The current user does not have Premium"
-    echo "3. There is no connection"
+if ! type ${1} &>/dev/null ; then
+    help && exit 1
+else
+    if ! ${1} "$@"; then
+       echo "ERROR: Something went wrong!"
+       echo "Possible issues are:"
+       echo "1. A device may not currently be seleted"
+       echo "2. The current user does not have Premium"
+       echo "3. There is no connection"
+    fi
 fi

@@ -38,7 +38,15 @@ elif [ ! -d ./node_modules/http ]; then
   npm install --save http
 fi
 
-if [ $(ls ./node_modules/ | wc -l) != 54 ]; then
+if [[ -d ./node_modules/ && $(ls ./node_modules/ | wc -l) != 54 ]]; then
+# Can't remeber how to do the above in a POSIX test, so I used bash...
+  rm ./node_modules -rf
+  cd ./web-api-auth-examples/
+  echo "Installing auth examples"
+  npm install &>/dev/null
+  mv ./node_modules ../
+  cd ../
+elif [ ! -d ./node_modules/ ]; then
   cd ./web-api-auth-examples/
   echo "Installing auth examples"
   npm install &>/dev/null

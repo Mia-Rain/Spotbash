@@ -48,7 +48,7 @@ device(){
 }
 devices(){
     IFS=""
-    curl -X "GET" "https://api.spotify.com/v1/me/player/devices" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer  $AUTHKEY" -s | jq '.[]' | sed -z 's/]\n.*/]/g' | jq -M '.[]' | jq '.name,.id' -M | sed 's/"//g'
+    curl -X "GET" "https://api.spotify.com/v1/me/player/devices" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer  $AUTHKEY" -s | jq '.[]' | sed -z 's/]\n.*/]/g' | jq '.[]' | jq '.name,.id' | sed 's/"//g'
 }
 set_volume(){
     curl -s -X PUT -d device_id=$id -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/me/player/volume?volume_percent=$2"
@@ -63,7 +63,7 @@ search_track(){
     if [ ! $(echo $search | grep -q '[[:space:]]') ]; then
       search=$(echo -n $search | sed 's/[[:space:]]/%20/g')
     fi
-    curl -s X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${search}&limit=9&type=track" | jq -M '.tracks' | jq '.items,del(.[]) | [.[] | .name,[.artists | .[] | .["name"]],.uri]' |  sed -z 's/\[]\n//g' | sed -e 's/\[//g' -e 's/]//g' -e '/^[[:space:]]*$/d' -e 's/,//g' -e 's/  "//g' -e 's/"//g' -e '/^ *$/d' | sed -z -e 's/\n  /  By: /g' -e 's/\nspotify:/ @ spotify:/g'
+    curl -s X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${search}&limit=9&type=track" | jq '.tracks' | jq '.items,del(.[]) | [.[] | .name,[.artists | .[] | .["name"]],.uri]' |  sed -z 's/\[]\n//g' | sed -e 's/\[//g' -e 's/]//g' -e '/^[[:space:]]*$/d' -e 's/,//g' -e 's/  "//g' -e 's/"//g' -e '/^ *$/d' | sed -z -e 's/\n  /  By: /g' -e 's/\nspotify:/ @ spotify:/g'
 }
 search_album(){
         IFS=""
@@ -75,10 +75,10 @@ search_album(){
     if [ ! $(echo $search | grep -q '[[:space:]]') ]; then
       search=$(echo -n $search | sed 's/[[:space:]]/%20/g')
     fi
-    curl -s X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${search}&limit=9&type=album" | jq '.[] | .items | .[] | .["name"],[ .artists | .[] | .name ],.["uri"]' -M -r | sed -e 's/\[//g' -e 's/\]//g' -e '/^[[:space:]]*$/d' -e 's/,//g' -e 's/"//g' -e '/^ *$/d' | sed -z -e 's/\n  /  By: /g' -e 's/\nspotify:/ @ spotify:/g'
+    curl -s X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${search}&limit=9&type=album" | jq '.[] | .items | .[] | .["name"],[ .artists | .[] | .name ],.["uri"]' | sed -e 's/\[//g' -e 's/\]//g' -e '/^[[:space:]]*$/d' -e 's/,//g' -e 's/"//g' -e '/^ *$/d' | sed -z -e 's/\n  /  By: /g' -e 's/\nspotify:/ @ spotify:/g'
 }
 auth(){
-  export "$(curl X POST -d grant_type=refresh_token -d refresh_token=$REKEY -d client_id=$CLID -d client_secret=$CLSEC https://accounts.spotify.com/api/token -s | jq '.access_token' -M | sed '0,/\"/{s/\"/AUTHKEY="/}' | sed 's/\"//g')"
+  export "$(curl X POST -d grant_type=refresh_token -d refresh_token=$REKEY -d client_id=$CLID -d client_secret=$CLSEC https://accounts.spotify.com/api/token -s | jq '.access_token' | sed '0,/\"/{s/\"/AUTHKEY="/}' | sed 's/\"//g')"
 }
 play_track(){
     if [ -f ${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/uri ]; then
@@ -101,14 +101,14 @@ repeat_off(){
     curl -X "PUT" -d device_id=$id -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/me/player/repeat?state=off"
 }
 repeat_state(){
-    get_info | jq -M 'del(.["device", "actions", "external_urls", "track_number", "preview_url", "popularity", "name", "uri", "href", "id", "is_local", "item", "shuffle_state", "is_playing", "timestamp", "context", "progress_ms", "currently_playing_type"])' | sed -e 's/{//g' -e 's/\}//g' -e '/^[[:space:]]*$/d' |  sed 's/://g' | jq -M -r | tr "\n" " " |sed -e 's/^[ \t]*//;s/[ \t]*$//' | tr " " ":" | sed -e 's/repeat_state/Repeat/g' -e 's/:/: /g' && echo ''
+    get_info | jq 'del(.["device", "actions", "external_urls", "track_number", "preview_url", "popularity", "name", "uri", "href", "id", "is_local", "item", "shuffle_state", "is_playing", "timestamp", "context", "progress_ms", "currently_playing_type"])' | sed -e '/{/d' -e '/}/d' -e 's/"//g' -e 's/\s\srepeat_state/Loop State/g'
 }
 set(){
     curl -X "PUT" "https://api.spotify.com/v1/me/player" --data "{\"device_ids\":[\"$2\"]}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
     pre
 }
 playlists(){
-    echo 'Playlists:' && curl -s -X GET "https://api.spotify.com/v1/me/playlists" -H 'Accept: application/json' -H 'Content-Type: application/json' -H "Authorization: Bearer $AUTHKEY" | jq '.[]' | sed -z 's/]\n.*/]/g' | jq -M '.[] | .name,.uri' 2>/dev/null | sed 's/"//g'
+    echo 'Playlists:' && curl -s -X GET "https://api.spotify.com/v1/me/playlists" -H 'Accept: application/json' -H 'Content-Type: application/json' -H "Authorization: Bearer $AUTHKEY" | jq '.[]' | sed -z 's/]\n.*/]/g' | jq '.[] | .name,.uri' 2>/dev/null | sed 's/"//g'
 }
 play(){
     curl -X "PUT" "https://api.spotify.com/v1/me/player/play?device_${id}" --data "{\"context_uri\":\$2\"}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
@@ -149,7 +149,7 @@ kill_node: Can be used to quickly kill any node processes | used to kill SDK ser
 EOF
 }
 auth
-id=$(echo "$(curl -X "GET" "https://api.spotify.com/v1/me/player/devices" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer  $AUTHKEY" -s)" | jq -M '.devices' | sed '/},/q' | sed -e 's/},/}\n\]/g' -e 's/\]//g' -e 's/\[//g' | jq -M '.id' | sed -e '0,/"/{s/"/id="/}' | sed 's/"//g')
+id=$(echo "$(curl -X "GET" "https://api.spotify.com/v1/me/player/devices" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer  $AUTHKEY" -s)" | jq '.devices' | sed '/},/q' | sed -e 's/},/}\n\]/g' -e 's/\]//g' -e 's/\[//g' | jq '.id' | sed -e '0,/"/{s/"/id="/}' | sed 's/"//g')
 if [ $1 = "auth" ]; then
     echo $AUTHKEY
     exit 0

@@ -10,7 +10,7 @@ if [ ! -f $(which curl) ]; then
 fi
 
 #refresh(){
-#    curl -X POST -d grant_type=refresh_token -d refresh_token=$rekey https://accounts.spotify.com/api/token -s | jq '.access_token' -M | sed 's/"//g'
+#    curl -X POST -d grant_type=refresh_token -d refresh_token=$rekey https://accounts.spotify.com/api/token -s | jq '.access_token' | sed 's/"//g'
 #}
 #while sleep 1h; do refresh ;done &
 # For right now we get a new oauthkey everytime we use spotbash; the oauth key only lasts 1 hour, while the $REKEY is infinite
@@ -23,7 +23,7 @@ select_sh(){
 get_volume(){
     get="volume_percent"
     IFS="" # IFS breaks 'echo $(jq)'
-    echo $(get_info) | select_sh | jq -M '.device' | jq -M ".$get"
+    echo $(get_info) | select_sh | jq '.device' | jq ".$get"
 }
 pause(){
     curl -X PUT -s -d device_id=$id -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" https://api.spotify.com/v1/me/player/pause
@@ -89,7 +89,7 @@ play_track(){
     curl -s -X PUT "https://api.spotify.com/v1/me/player/play?device_${id}" --data "{\"uris\":[\"$uri\"]}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
 }
 state(){
-    get_info | jq -M 'del(.["device", "actions", "external_urls", "track_number", "preview_url", "popularity", "name", "uri", "href", "id", "is_local", "item", "shuffle_state", "repeat_state", "timestamp", "context", "progress_ms", "currently_playing_type"])' | sed -e 's/{//g' -e 's/\}//g' -e '/^[[:space:]]*$/d' | sed 's/://g' | jq -M -r | tr "\n" " " |sed -e 's/^[ \t]*//;s/[ \t]*$//' | tr " " ":" | sed -e 's/is_playing/Playing/g' -e 's/:/: /g' && echo ''
+	get_info | jq 'del(.["device", "actions", "external_urls", "track_number", "preview_url", "popularity", "name", "uri", "href", "id", "is_local", "item", "shuffle_state", "repeat_state", "timestamp", "context", "progress_ms", "currently_playing_type"])' | sed -e '/}/d' -e '/{/d' | sed 's/"//g' | sed 's/\s\sis_playing/Playing/g'
 }
 loop(){
     curl -X "PUT" -d device_id=$id -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/me/player/repeat?state=track"

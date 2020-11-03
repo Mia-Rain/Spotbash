@@ -36,12 +36,10 @@ playing() {
     name
 }
 select_sh(){
-sed '/},/q' | sed -e 's/},/}\n\}/g'
+    sed '/},/q' | sed -e 's/},/}\n\}/g'
 }
 get_volume(){
-    get="volume_percent"
-    IFS="" # IFS breaks 'echo $(jq)'
-    get_info | select_sh | jq '.device' | jq ".$get"
+    get_info | jq .device.volume_percent
 }
 pause(){
     curl -X PUT -s -d device_id="$id" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" https://api.spotify.com/v1/me/player/pause

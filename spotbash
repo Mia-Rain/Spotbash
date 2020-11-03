@@ -143,9 +143,9 @@ minleft(){
     echo "Min Left: ~$(expr $(left | sed 's/ms//g' |cut -d' ' -f2- | cut -d' ' -f2-) / 60000)"
 }
 help(){
-		cat << 'EOF'
-${0##*/}: Spotify Control API ~ Written in bash ~ By ThatGeekyWeeb (Mia)
-Usage: ${0##*/}:
+cat << 'EOF'
+Spotbash: Spotify Control API ~ Written in bash ~ By ThatGeekyWeeb (Mia)
+Usage: spotbash:
 [auth|device|search_*|play_track|*_volume|get_info|pre|skip|pause|resume|loop|repeat|state|set|play*|*left*]
 ***
 auth: Print $AUTHKEY and exit

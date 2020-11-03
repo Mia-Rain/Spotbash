@@ -4,9 +4,20 @@ reuri="http://localhost:5000/callback" # Callback uri
 echo "Notice: THIS REQUIRES NODE TO BE INSTALLED!"
 pkill node &>/dev/null
 if [ ! -d ./web-api-auth-examples ]; then
-  git submodule update
-  git clone https://github.com/zhenyu0519/web-api-auth-examples.git &>/dev/null
+  if [ -f $(which git) ]; then
+  	git submodule update
+  	git clone git://github.com/zhenyu0519/web-api-auth-examples.git &>/dev/null
+  elif [ -f $(which curl) ] && [ -f $(which tar) ]; then 
+	curl -#L "http://github.com/zhenyu0519/web-api-auth-examples/archive/master.tar.gz" | tar xfz - && mv ./web-api-auth-examples-master/ ./web-api-auth-examples 
+  else 
+	echo "Couldn't find a way to clone github/zhenyu0519/web-api-auth-examples/"
+	echo "Supported ways are:"
+	printf 'Tar & cURL\nGit Clone\n'
+	echo "Please download and safe github/zhenyu0519/web-api-auth-examples/ to ./web-api-auth-examples"
+	exit 1
+  fi
 fi
+# Ik Ik https is better, but some devices have issues with ssl, (as does mine), thus I am trying to avoid it
 ##
   cd ./web-api-auth-examples/authorization_code
   cp ../../app.patch ./

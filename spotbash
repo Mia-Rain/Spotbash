@@ -26,8 +26,17 @@ clean_up(){
 get_info(){
     curl -s -X "GET" "https://api.spotify.com/v1/me/player" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
 }
+name(){
+    get_info | jq .item.name,.item.album.artists[].name | sed -e 's/"//g' -e '0,/^/{s/^/Playing: /}' | sed -z '0,/\n/{s/\n/\nBy: /}'
+}
+status() {
+    name
+}
+playing() {
+    name
+}
 select_sh(){
-		sed '/},/q' | sed -e 's/},/}\n\}/g'
+sed '/},/q' | sed -e 's/},/}\n\}/g'
 }
 get_volume(){
     get="volume_percent"
@@ -47,10 +56,13 @@ skip(){
     next
 }
 previous(){
-     curl -X "POST" -s -d device_id="$id" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" https://api.spotify.com/v1/me/player/previous
+    curl -X "POST" -s -d device_id="$id" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" https://api.spotify.com/v1/me/player/previous
 }
 pre(){
-		 previous
+    previous
+}
+prev(){
+    pre
 }	
 device(){
      echo "Device_${id}"
@@ -126,13 +138,19 @@ play(){
 kill_node(){
     pkill node
 }
+left(){
+    echo "Time Left: $(expr $(get_info | jq .item.duration_ms,.progress_ms | sed -z '0,/\n/{s/\n/ - /}' | sed -z 's/\n//g'))ms"
+}
+minleft(){
+    echo "Min Left: ~$(expr $(left | sed 's/ms//g' |cut -d' ' -f2- | cut -d' ' -f2-) / 60000)"
+}
 help(){
-		cat << EOF
-${0##*/}: Spotify Control API ~ Written in bash
+		cat << 'EOF'
+${0##*/}: Spotify Control API ~ Written in bash ~ By ThatGeekyWeeb (Mia)
 Usage: ${0##*/}:
-[auth|device|search_*|play_track|get_volume|set_volume|get_info|previous|skip|pause|resume|loop|repeat|state|set|playlists|play|kill_node]
+[auth|device|search_*|play_track|*_volume|get_info|pre|skip|pause|resume|loop|repeat|state|set|play*|*left*]
 ***
-auth: Print AUTHKEY and exit
+auth: Print $AUTHKEY and exit
 device: Print first device ID and exit
 devices: List ALL devices and exit
 search_play: Search for "arg2" and play
@@ -142,7 +160,7 @@ play_track: Play URI
 get_volume: Output player volume and exit
 set_volume: Set player volume to "arg2" and exit
 get_info: Get debugging info about currently playing device
-previous: Change playback to previous song
+pre: Change playback to previous song
 skip: Change playback to next song
 pause: Pause playback
 resume: Resume playback
@@ -154,7 +172,9 @@ repeat_state: Output playback repeat status and exit
 set: Move playback to "arg2" | "arg2" must be a device ID
 playlists: Output list of users playlists and exit
 play: Play "arg2" | "arg2" must be Album or Playlist URI
-kill_node: Can be used to quickly kill any node processes | used to kill SDK server
+playing: Print Song name followed by artist and exit
+left: Print time left in MS (exact) and exit
+minleft: Print time left in Mins (approximate) and exit
 ***
 EOF
 }

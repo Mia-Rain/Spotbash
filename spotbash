@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 if [ ! -f "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/authkeys ];then
-	. "$(find "${XDG_HOME:-$HOME}" | grep "potbash/authkeys" | cut -d$'\n' -f2-)"
-	# Just going to source whatever looks like Spotbash's autokeys config file if we can;t find it
+	if ! source "$(find "${XDG_HOME:-$HOME}" | grep "potbash/authkeys" | cut -d$'\n' -f2-)"; then
+		echo "ERROR: The AUTHKEYS cache file is missing!! Spotbash needs this file.. If you don't have it, reclone and re-run the setup" && exit 1
+	fi
+	# Just going to source whatever looks like Spotbash's autokeys config file if we can't find it
 else
 	. "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/authkeys
 fi
@@ -15,6 +17,12 @@ if [ ! -f "$(which curl)" ]; then
 fi
 export AUTHKEY="" 
 # For right now we get a new oauthkey everytime we use spotbash; the oauth key only lasts 1 hour, while the $REKEY is infinite
+clean_up(){
+# Clean up >
+  rm "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/search 2>/dev/null
+  rm "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/uri 2>/dev/null
+# Just going to use 2>/dev/null instead if file checking, will make no diff
+}
 get_info(){
     curl -s -X "GET" "https://api.spotify.com/v1/me/player" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
 }
@@ -150,21 +158,24 @@ kill_node: Can be used to quickly kill any node processes | used to kill SDK ser
 ***
 EOF
 }
+clean_up # Cleaning before doing anything is prob good idea
 id=$(auth && curl -X "GET" "https://api.spotify.com/v1/me/player/devices" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer  $AUTHKEY" -s | jq '.["devices"][].id' | sed 's/"//g')
 case $1 in
     auth)
-        auth && echo "$AUTHKEY" && exit 0
+        auth && echo "$AUTHKEY" && clean_up && exit 0
         ;;
     search_play)
+	 auth
 	 printf "search='%b'" "${2}" > "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/search
-	 sed -i -e 's/ /%20/g' "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/search
-	 uri=$(search | sed -e 's/Name:.*//g' -e 's/uri:[[:space:]]//g' -e '/^[[:space:]]*$/d')
+	 sed -i -e 's/[[:space:]]/%20/g' "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/search
+	 uri=$(search_track | cut -d'@' -f2- | cut -d$'\n' -f1 | sed 's/[[:space:]]//g')
 	 printf "uri='%b'" "${uri}" > "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/uri
 	 play_track "$@"
+	 clean_up
 	 exit 0
 	 ;;
     "")
-	help && exit 1
+	help && clean_up && exit 1
 	;;
     *)
         auth && if ! type ${1} &>/dev/null ; then
@@ -178,5 +189,7 @@ case $1 in
 		        echo "3. There is no connection"
     		  fi
                 fi
+	clean_up 
         ;;
 esac
+

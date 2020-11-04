@@ -142,11 +142,20 @@ left(){
 minleft(){
     echo "Min Left: ~$(expr $(left | sed 's/ms//g' |cut -d' ' -f2- | cut -d' ' -f2-) / 60000)"
 }
+trans(){
+    if [ ! -z $2 ]; then
+	export TRANS_ID=${2}
+    else
+	TRANS_ID=$(device | cut -d'_' -f2-)
+	export TRANS_ID
+    fi
+    curl -X "PUT" "https://api.spotify.com/v1/me/player" --data "{\"device_ids\":[\"${TRANS_ID}\"]}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
+}
 help(){
 cat << 'EOF'
 Spotbash: Spotify Control API ~ Written in bash ~ By ThatGeekyWeeb (Mia)
 Usage: spotbash:
-[auth|device|search_*|play_track|*_volume|get_info|pre|skip|pause|resume|loop|repeat|state|set|play*|*left*]
+[auth|device|search_*|play_track|*_volume|get_info|pre|trans|skip|pause|resume|loop|repeat|state|set|play*|*left*]
 ***
 auth: Print $AUTHKEY and exit
 device: Print first device ID and exit
@@ -159,6 +168,7 @@ get_volume: Output player volume and exit
 set_volume: Set player volume to "arg2" and exit
 get_info: Get debugging info about currently playing device
 pre: Change playback to previous song
+trans: Transfer playback to "arg2" | arg2 must be DeviceID | Uses device func if "arg2" is empty
 skip: Change playback to next song
 pause: Pause playback
 resume: Resume playback

@@ -187,13 +187,14 @@ minleft: Print time left in Mins (approximate) and exit
 EOF
 }
 clean_up # Cleaning before doing anything is prob good idea
-id=$(auth && curl -X "GET" "https://api.spotify.com/v1/me/player/devices" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer  $AUTHKEY" -s | jq '.["devices"][].id' | sed 's/"//g')
 case $1 in
     auth)
         auth && echo "$AUTHKEY" && clean_up && exit 0
         ;;
     search_play)
 	 auth
+	 id=$(auth && export AUTHKEY && curl -X "GET" "https://api.spotify.com/v1/me/player/devices" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer  $AUTHKEY" -s | jq '.["devices"][].id' | sed 's/"//g')
+	 export id
 	 printf "search='%b'" "${2}" > "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/search
 	 sed -i -e 's/[[:space:]]/%20/g' "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/search
 	 uri=$(search_track | cut -d'@' -f2- | cut -d$'\n' -f1 | sed 's/[[:space:]]//g')
@@ -206,7 +207,10 @@ case $1 in
 	help && clean_up && exit 1
 	;;
     *)
-        auth && if ! type ${1} &>/dev/null ; then
+	auth
+        id=$(auth && export AUTHKEY && curl -X "GET" "https://api.spotify.com/v1/me/player/devices" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer  $AUTHKEY" -s | jq '.["devices"][].id' | sed 's/"//g') 
+	export id
+	if ! type ${1} &>/dev/null ; then
    		  help && exit 1
 		else
     		  if ! ${1} "$@"; then
@@ -215,9 +219,11 @@ case $1 in
        			echo "1. A device may not currently be seleted"
        			echo "2. The current user does not have Premium"
 		        echo "3. There is no connection"
-    		  fi
+    		  else
+		       clean_up && exit 0
+		  fi
                 fi
-	clean_up 
+	clean_up
         ;;
 esac
 

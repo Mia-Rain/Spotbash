@@ -72,7 +72,9 @@ cat << EOF > ./public/consts.js
 EOF
 echo "Please open 'localhost:5000' in your browser"
 node ./app.js > ./authkeys & disown
-sleep 20
+until [ -f ./authkeys ] && [ $(cat ./authkeys) != "" ]; do
+	sleep 1
+done
 echo $(cat ./authkeys | sed -z 's/%\n/REKEY=/g') > ./authkeys
 echo "Authkeys were written to ./authkeys"
 sed -i "s/client_id = '.*'/client_id = 'id'/g" ./app.js

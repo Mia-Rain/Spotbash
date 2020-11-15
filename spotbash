@@ -174,7 +174,14 @@ shuffle() { # FIXME ~ There has to be a better way to do this...
     curl -X "PUT" "https://api.spotify.com/v1/me/player/shuffle?state=${shvalue}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
 }
 songs(){
-    curl -X GET "$(printf '%b/tracks' $(get_info | jq .context.href -r))" -H "Authorization: Bearer ${AUTHKEY}" -s | jq '.items[].track | .name,.artists[0].name' -r
+    case $2 in
+        "")
+    		curl -X GET "$(printf '%b/tracks' $(get_info | jq .context.href -r))" -H "Authorization: Bearer ${AUTHKEY}" -s | jq '.items[].track | .name,.artists[0].name' -r -M | sed '/null/d'
+    		;;
+	*)
+    		curl -X GET "https://api.spotify.com/v1/playlists/${2}/tracks" -H "Authorization: Bearer ${AUTHKEY}" -s | jq '.items[].track | .name,.artists[0].name' -r -M | sed '/null/d'
+    		;;
+    esac
 }
 help(){
 cat << 'EOF'
@@ -210,7 +217,7 @@ left: Print time left in MS (exact) and exit
 minleft: Print time left in Mins (approximate) and exit
 shuffle: Enable/Disable Shuffle | Set to "arg2" if specified
 shuffle_state: Print state of shuffle and exit
-songs: Lists songs from current playlist | Mainly for automated song ripping
+songs: Lists songs from current/"arg2" playlist | Mainly for automated song ripping | "arg2" must be playlist ID
 ***
 "arg2" Usage:
 <command> <"arg2">

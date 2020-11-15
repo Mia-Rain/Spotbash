@@ -173,11 +173,14 @@ shuffle() { # FIXME ~ There has to be a better way to do this...
     fi
     curl -X "PUT" "https://api.spotify.com/v1/me/player/shuffle?state=${shvalue}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
 }
+songs(){
+    curl -X GET "$(printf '%b/tracks' $(get_info | jq .context.href -r))" -H "Authorization: Bearer ${AUTHKEY}" -s | jq '.items[].track | .name,.artists[0].name' -r
+}
 help(){
 cat << 'EOF'
 Spotbash: Spotify Control API ~ Written in bash ~ By ThatGeekyWeeb (Mia)
 Usage: spotbash:
-[auth|device|search_*|play_track|*_volume|get_info|pre|trans|skip|pause|resume|loop|repeat|state|set|play*|*left|shuffle*]
+[auth|device|search_*|play_track|*_volume|get_info|pre|trans|skip|pause|resume|loop|repeat|state|set|play*|*left|shuffle*|songs]
 ***
 auth: Print $AUTHKEY and exit
 device: Print first device ID and exit
@@ -207,6 +210,7 @@ left: Print time left in MS (exact) and exit
 minleft: Print time left in Mins (approximate) and exit
 shuffle: Enable/Disable Shuffle | Set to "arg2" if specified
 shuffle_state: Print state of shuffle and exit
+songs: Lists songs from current playlist | Mainly for automated song ripping
 ***
 "arg2" Usage:
 <command> <"arg2">

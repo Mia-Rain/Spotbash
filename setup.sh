@@ -5,7 +5,7 @@ echo "Notice: THIS REQUIRES NODE TO BE INSTALLED!"
 pkill node &>/dev/null
 if [ ! -d ./web-api-auth-examples ]; then
   if [ -f $(which git) ]; then
-  	git submodule update
+  	git submodule update --init
   	git clone git://github.com/zhenyu0519/web-api-auth-examples.git &>/dev/null
   elif [ -f $(which curl) ] && [ -f $(which tar) ]; then 
 	curl -#L "http://github.com/zhenyu0519/web-api-auth-examples/archive/master.tar.gz" | tar xfz - && mv ./web-api-auth-examples-master/ ./web-api-auth-examples 
@@ -45,15 +45,16 @@ if [ ! -f $(which npm) ]; then
   exit 1
 elif [ ! -d ./node_modules/fs ]; then
   npm install --save fs
-elif [ ! -d ./node_modules/http ]; then
+fi
+if [ ! -d ./node_modules/http ]; then
   npm install --save http
 fi
 
-if [[ -d ./node_modules/ && $(ls ./node_modules/ | wc -l) != 54 ]]; then
-# Can't remeber how to do the above in a POSIX test, so I used bash...
+if [ -d ./node_modules/ ] && [ $(ls ./node_modules/ | wc -l) -lt 54 ] || [ -d ./node_modules/ ] && [ $(ls ./node_modules | wc -l ) != 54 ] ; then
+# Might be POSIX compatible now... IDK
   rm ./node_modules -rf
   cd ./web-api-auth-examples/
-  echo "Installing auth examples"
+  echo "Re-Installing auth examples"
   npm install &>/dev/null
   mv ./node_modules ../
   cd ../

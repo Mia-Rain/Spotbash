@@ -23,7 +23,7 @@ CLSEC=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 The client ID and secret can be found in set 1 of [Setup](#Setup)\
 While REKEY is a bit harder to get... And requires a browser and server to make a request to Spotifys API\
 Spotify then returns the Auth key, and a Refresh key, the Refresh key is used to request new Auth keys since the expire 1 hour after being created\
-I'll make a server where this can be done, for now you can use [SquidtifyJS](https://github.com/ThatGeekyWeeb/SquidtifyJS/) with the JS console
+[REKEY](https://www.thatgeekyweeb.is-dummy-thi.cc/REKEY/), can be used to get the `REKEY`
 ## Usage
 1. `./spotbash help`
 ```text

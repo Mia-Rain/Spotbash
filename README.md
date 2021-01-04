@@ -2,17 +2,6 @@
 <h1> Spotbash </h1><p><p><img src="https://cdn.discordapp.com/attachments/699685435198144553/758393878947561522/spotbash_ex2.png" width="15%" align="right"> </p>Spotify Control API ~ Written in bash, using curl.</p>
 
 ***
-### Pull Requests
-The development of Spotbash is "slow", but if anything is missing, or you might want to see, open a PR, I'll review it and merge it!
-> ***
-
-#### Things that are missing
-Several things are missing from Spotbash, here are a few;\
-Follow support (Users cannot Follow playlists, albums or artists using Spotbash)\
-Heart/Like support (No ability to like tracks or add them to a certain playlist is implemented)\
-Playlist editing/creation (Playlists can only be played from)\
-Modify support (The ability to modify playlists, is currently not supported)
-***
 ## Setup
 1. Go to the [developer dashboard](https://developer.spotify.com/dashboard/applications) and create a new app.
 2. Remember the `Client ID` and the `Client Secret`\
@@ -20,9 +9,24 @@ Modify support (The ability to modify playlists, is currently not supported)
 > You can optionally edit `app.patch` to change the scopes, note that doing this can break somethings.
 > > You shouldn't mess with the patches unless you understand JS (`app.patch`) and HTML (`index.patch`) 
 3. `./setup.sh`
+---
+
+# Musl
+Those on musl won't be able to run `./setup` as it requires nodejs to be installed, which isn't yet compatible with musl libc...\
+But Spotbash can still be used from musl, the user just has to create `$HOME/.cache/spotbash/authkeys`\
+```
+$ cat authkeys
+REKEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+CLID=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+CLSEC=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+```
+The client ID and secret can be found in set 1 of [Setup](#Setup)\
+While REKEY is a bit harder to get... And requires a browser and server to make a request to Spotifys API\
+Spotify then returns the Auth key, and a Refresh key, the Refresh key is used to request new Auth keys since the expire 1 hour after being created\
+I'll make a server where this can be done, for now you can use [SquidtifyJS](https://github.com/ThatGeekyWeeb/SquidtifyJS/) with the JS console
 ## Usage
 1. `./spotbash help`
-```
+```text
 Spotbash: Spotify Control API ~ Written in bash ~ By ThatGeekyWeeb (Mia)
 Usage: spotbash:
 [auth|device|search_*|play_track|*_volume|get_info|pre|trans|skip|pause|resume|loop|repeat|state|set|play*|*left|shuffle*]
@@ -63,16 +67,4 @@ NOTE: Use qoutes!
 ***
 ```
 ***
-Spotbash is a "Control API" which means it only controls the Spotify playback of devices. The nodejs server can be used as a standalone player;
-
-See below.
-***
-I recommend using `Spotify Web Playback SDK` as a device, as it only requires a Spotify compatible browser.  
-
-Additionally, a Web Playback SDK implementation is embedded into `app.js`, and can be used after running `setup.sh`
-
-Note that `setup.sh` disowns a `node` process, meaning a `node` process will continue to run in the background until it is killed
-
-Closing the Browser Tab will not kill this process!\
-If you have any issues trying to use the Web Playback SDK implementation please open an issue!
-> Please do not open any issues regarding authorization failure, this is most likely due to the lifetime of an OAuth key being only 1 hour long.
+potbash is a "Control API" which means it only controls the Spotify playback of devices.

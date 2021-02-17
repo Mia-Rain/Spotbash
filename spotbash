@@ -1,115 +1,123 @@
-#!/usr/bin/env bash
-if [ ! -f "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/authkeys ];then
-	if ! source "$(find "${XDG_HOME:-$HOME}" | grep "potbash/authkeys" | cut -d$'\n' -f2-)"; then
-		echo "ERROR: The AUTHKEYS cache file is missing!! Spotbash needs this file.. If you don't have it, reclone and re-run the setup" && exit 1
-	fi
-	# Just going to source whatever looks like Spotbash's autokeys config file if we can't find it
-else
-	. "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/authkeys
-fi
-if [ ! -f "$(which jq)" ]; then
-    echo "jq not found!"
-    exit 1
-fi
-if [ ! -f "$(which curl)" ]; then
-    echo "curl not found!"
-    exit 1
-fi
-export AUTHKEY="" 
-# For right now we get a new oauthkey everytime we use spotbash; the oauth key only lasts 1 hour, while the $REKEY is infinite
+#!/bin/sh
+has() {
+	case "$(command -v $1 2>/dev/null)" in
+		alias*|"") return 1
+	esac
+}
+deps() {
+  deps="jq curl" # Make sure deps can be found # Should make some sort of ssl check here
+  for i in $deps; do
+  	if ! has $i; then
+  		echo "$i IS MISSING!"; missing=$(($missing + 1))
+  	fi
+  done
+  [ ${missing:-0} -gt 0 ] || {
+    [ ${missing:-0} -gt 1 ] && {
+      echo "JQ AND CURL ARE MISSING!"; exit 1
+    } || {
+      for i in $deps; do
+      	if ! has $i; then
+      		echo "$i IS MISSING!"; exit 1
+      	fi
+      done
+    }
+  }
+  export missing="no" # Finaly set missing to no - We can check this variable, instead of calling deps()
+}
 clean_up(){
-# Clean up >
-  rm "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/search 2>/dev/null
-  rm "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/uri 2>/dev/null
-# Just going to use 2>/dev/null instead if file checking, will make no diff
+  clean="search uri info"
+  for i in $clean; do
+    [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/$i" ] && rm "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/$i" 2>/dev/null
+  done
+}
+auth() {
+  if [ ! -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/authkeys" ];then
+  	[ -f ./authkeys ] && . ./authkeys || {
+      echo "ERROR: The AUTHKEYS cache file is missing!! Spotbash needs this file.. If you don't have it, reclone and re-run the setup"; exit 1
+    }
+  else
+  	. "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/authkeys"
+  fi
+  AUTHKEY=$(curl -X POST -d grant_type=refresh_token -d refresh_token="$REKEY" -d client_id="$CLID" -d client_secret="$CLSEC" https://accounts.spotify.com/api/token -s | jq .access_token -r)
+  export AUTHKEY; export AUTHD="1"
 }
 get_info(){
-    curl -s -X "GET" "https://api.spotify.com/v1/me/player" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
+  curl -s -X "GET" "https://api.spotify.com/v1/me/player" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" > "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/info"
+  #cat "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/info"
+  export infoF="${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/info"
+}
+id() {
+  id=$(jq .device.id -r < "$infoF")
 }
 name(){
-    get_info | jq .item.name,.item.album.artists[].name | sed -e 's/"//g' -e '0,/^/{s/^/Playing: /}' | sed -z '0,/\n/{s/\n/\nBy: /}'
-}
-status() {
-    name
-}
-playing() {
-    name
-}
-select_sh(){
-    sed '/},/q' | sed -e 's/},/}\n\}/g'
+  IFS=""
+  artistC=$(jq .item.name,.item.album.artists[].name < "$infoF" | sed -e 's/"//g' -e '0,/^/{s/^/Playing: /}' | tr '\n' '~' | sed -e 's/~/\nBy: /' | grep "~" | awk -F"~" '{print NF-1}')
+  artist=$(jq .item.name,.item.album.artists[].name < "$infoF" | sed -e 's/"//g' -e '0,/^/{s/^/Playing: /}' | tr '\n' '~' | sed 's/~/\nBy: /' )
+  if [ $artistC != 1 ]; then
+    echo $artist | sed -e 's/~/\, /' -e 's/~/\n/' | tr '\n' '~' | sed 's/~~/\n/' | tr '~' '\n'
+  else
+    echo $artist | sed 's/~/\n/' | tr '\n' '~' | sed 's/~~/\n/' | tr '~' '\n'
+  fi
 }
 get_volume(){
-    get_info | jq .device.volume_percent
+  jq .device.volume_percent < "$infoF"
 }
 pause(){
-    curl -X PUT -s -d device_id="$id" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" https://api.spotify.com/v1/me/player/pause
+  curl -X PUT -s -d device_id="$id" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" https://api.spotify.com/v1/me/player/pause
 }
 resume(){
-    curl -s --fail -X PUT --data "{}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" https://api.spotify.com/v1/me/player/play
+  curl -s --fail -X PUT --data "{}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" https://api.spotify.com/v1/me/player/play
 }
 next(){
-    curl -X "POST" -s -d device_id="$id" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" https://api.spotify.com/v1/me/player/next
-}
-skip(){
-    next
+  curl -X "POST" -s -d device_id="$id" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" https://api.spotify.com/v1/me/player/next
 }
 previous(){
-    curl -X "POST" -s -d device_id="$id" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" https://api.spotify.com/v1/me/player/previous
+  curl -X "POST" -s -d device_id="$id" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" https://api.spotify.com/v1/me/player/previous
 }
-pre(){
-    previous
-}
-prev(){
-    pre
-}	
 device(){
-     echo "Device_${id}"
+  echo "Device: ${id}"
 }
 devices(){
     IFS=""
-    curl -X "GET" "https://api.spotify.com/v1/me/player/devices" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer  $AUTHKEY" -s | jq '.[]' | sed -z 's/]\n.*/]/g' | jq '.[]' | jq '.name,.id' | sed 's/"//g'
+    curl -X "GET" "https://api.spotify.com/v1/me/player/devices" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer  $AUTHKEY" -s | jq '.devices[] | .name,.id' -r
 }
 set_volume(){
     curl -s -X PUT -d device_id="$id" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/me/player/volume?volume_percent=$2"
 }
 search_track(){
     IFS=""
-    if [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/search ]; then
-        source "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/search
+    if [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search" ]; then
+        . "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search"
     else
         search="$2"
     fi
-    if [ ! $(echo "$search" | grep -q '[[:space:]]') ]; then
-      search=$(echo -n "$search" | sed 's/[[:space:]]/%20/g')
+    if ! echo "$search" | grep -q '[[:space:]]'; then
+      search=$(printf '%s' "$search" | sed 's/[[:space:]]/%20/g')
     fi
-    curl -s X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${search}&limit=9&type=track" | jq '.tracks' | jq '.items,del(.[]) | [.[] | .name,[.artists | .[] | .["name"]],.uri]' |  sed -z 's/\[]\n//g' | sed -e 's/\[//g' -e 's/]//g' -e '/^[[:space:]]*$/d' -e 's/,//g' -e 's/  "//g' -e 's/"//g' -e '/^ *$/d' | sed -z -e 's/\n  /  By: /g' -e 's/\nspotify:/ @ spotify:/g'
+		curl -s -X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=man%20of%20the%20year&limit=9&type=track" | jq '.tracks.items,del(.[]) | .[] | .name,[.artists[].name],.uri' -r -M | sed -e '/\[/d' -e '/\]/d' -e 's/[[:blank:]]"/By\: /g' -e 's/"//g' | tr '\n' '~' | sed -e 's/~spotify\:/ @ spotify\:/g' -e 's/~ By\:/ By:/g' | tr '~' '\n'
 }
-search_album(){
-        IFS=""
-    if [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/search ]; then
-        source "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/search
-    else
-        search="$2"
-    fi
-    if [ ! $(echo "$search" | grep -q '[[:space:]]') ]; then
-      search=$(echo -n "$search" | sed 's/[[:space:]]/%20/g')
-    fi
-    curl -s X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${search}&limit=9&type=album" | jq '.[] | .items | .[] | .["name"],[ .artists | .[] | .name ],.["uri"]' | sed -e 's/\[//g' -e 's/\]//g' -e '/^[[:space:]]*$/d' -e 's/,//g' -e 's/"//g' -e '/^ *$/d' | sed -z -e 's/\n  /  By: /g' -e 's/\nspotify:/ @ spotify:/g'
-}
-auth(){
-  AUTHKEY=$(curl -X POST -d grant_type=refresh_token -d refresh_token="$REKEY" -d client_id="$CLID" -d client_secret="$CLSEC" https://accounts.spotify.com/api/token -s | jq .access_token | sed 's/"//g')
-  export AUTHKEY
-}
+#search_album(){
+#    IFS=""
+#    if [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search" ]; then
+#        source "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search"
+#    else
+#        search="$2"
+#    fi
+#    if ! echo "$search" | grep -q '[[:space:]]'; then
+#      search=$(printf '%s' "$search" | sed 's/[[:space:]]/%20/g')
+#    fi
+#    curl -s =X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${search}&limit=9&type=album" | jq '.[] | .items | .[] | .["name"],[ .artists | .[] | .name ],.["uri"]' | sed -e 's/\[//g' -e 's/\]//g' -e '/^[[:space:]]*$/d' -e 's/,//g' -e 's/"//g' -e '/^ *$/d' | sed -z -e 's/\n  /  By: /g' -e 's/\nspotify:/ @ spotify:/g'
+#} POSIX SED PAIN
 play_track(){
-    if [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/uri ]; then
-        source "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/uri
+    if [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/uri" ]; then
+        . "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/uri"
     else
         uri="$2"
-    fi  
+    fi
     curl -s -X PUT "https://api.spotify.com/v1/me/player/play?device_${id}" --data "{\"uris\":[\"$uri\"]}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
 }
-state(){
-	get_info | jq 'del(.["device", "actions", "external_urls", "track_number", "preview_url", "popularity", "name", "uri", "href", "id", "is_local", "item", "shuffle_state", "repeat_state", "timestamp", "context", "progress_ms", "currently_playing_type"])' | sed -e '/}/d' -e '/{/d' | sed 's/"//g' | sed 's/\s\sis_playing/Playing/g'
+state() {
+  printf 'Playing: %s\n' $(jq .is_playing -r < "$infoF")
 }
 loop(){
     curl -X "PUT" -d device_id="$id" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/me/player/repeat?state=track"
@@ -121,150 +129,147 @@ repeat_off(){
     curl -X "PUT" -d device_id="$id" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/me/player/repeat?state=off"
 }
 repeat_state(){
-    get_info | jq 'del(.["device", "actions", "external_urls", "track_number", "preview_url", "popularity", "name", "uri", "href", "id", "is_local", "item", "shuffle_state", "is_playing", "timestamp", "context", "progress_ms", "currently_playing_type"])' | sed -e '/{/d' -e '/}/d' -e 's/"//g' -e 's/\s\srepeat_state/Loop State/g'
-}
-set(){
-    curl -X "PUT" "https://api.spotify.com/v1/me/player" --data "{\"device_ids\":[\"$2\"]}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
-    pre
+  printf 'Loop State: %s\n' $(jq -r .repeat_state < "$infoF")
 }
 playlists(){
-    echo 'Playlists:' && curl -s -X GET "https://api.spotify.com/v1/me/playlists" -H 'Accept: application/json' -H 'Content-Type: application/json' -H "Authorization: Bearer $AUTHKEY" | jq '.[]' | sed -z 's/]\n.*/]/g' | jq '.[] | .name,.uri' 2>/dev/null | sed 's/"//g'
+    echo 'Playlists:' && curl -s -X GET "https://api.spotify.com/v1/me/playlists" -H 'Accept: application/json' -H 'Content-Type: application/json' -H "Authorization: Bearer $AUTHKEY" | jq '.items[] | .name,.uri' -r
 }
 play(){
-    curl -X "PUT" "https://api.spotify.com/v1/me/player/play?device_${id}" --data "{\"context_uri\":\$2\"}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
-}
-kill_node(){
-    pkill node
-}
-left(){
-    echo "Time Left: $(expr $(get_info | jq .item.duration_ms,.progress_ms | sed -z '0,/\n/{s/\n/ - /}' | sed -z 's/\n//g'))ms"
-}
-minleft(){
-    echo "Min Left: ~$(expr $(left | sed 's/ms//g' |cut -d' ' -f2- | cut -d' ' -f2-) / 60000)"
+  curl -X "PUT" "https://api.spotify.com/v1/me/player/play?device_${id}" --data "{\"context_uri\":\$2\"}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
 }
 trans(){
     if [ ! -z $2 ]; then
-	export TRANS_ID=${2}
+	     export TRANS_ID=${2}
     else
-	TRANS_ID=$(device | cut -d'_' -f2-)
-	export TRANS_ID
+	     TRANS_ID=$id
+       export TRANS_ID
     fi
     curl -X "PUT" "https://api.spotify.com/v1/me/player" --data "{\"device_ids\":[\"${TRANS_ID}\"]}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
 }
 shuffle_state(){
-    get_info | jq .shuffle_state | sed '1 i\Shuffle: ' | tr -d "\n" && printf '\n'
+    printf 'Shuffle State: %\n' $(jq .shuffle_state < "$infoF")
 }
-shuffle() { # FIXME ~ There has to be a better way to do this...
-    if [ ! -z "$2" ]; then
-        shvalue_pre=$(shuffle_state | cut -d' ' -f2-)
-        case $shvalue_pre in
-            true)
-                shvalue="false";;
-            false)
-                shvalue="true";;
-            *)
-                echo "Could not determine the current shuffle state! :("
-                echo "Try again later or use 'arg2' (See help)" && exit 1
-                ;;
-        esac
-        
-    else
-    	shvalue=${2}
-    fi
-    curl -X "PUT" "https://api.spotify.com/v1/me/player/shuffle?state=${shvalue}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
+shuffle() {
+  shvalue_pre=$(jq .shuffle_state < "$infoF") # Should add a system to grab values - Readability at the cost of speed
+  case $shvalue_pre in
+      true)
+          shvalue="false";;
+      false)
+          shvalue="true";;
+      *)
+          [ ${shvalue} ] && {
+            curl -X "PUT" "https://api.spotify.com/v1/me/player/shuffle?state=${shvalue}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
+          } || {
+            [ ${2} ] && {
+              curl -X "PUT" "https://api.spotify.com/v1/me/player/shuffle?state=${2}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
+            } || {
+              echo "Could not determine the current shuffle state! :("
+              echo "Try again later or use 'arg2' (See help)"; exit 1
+            }
+          }
+        ;;
+  esac
 }
-songs(){
-    case $2 in
-        "")
-    		curl -X GET "$(printf '%b/tracks' $(get_info | jq .context.href -r))" -H "Authorization: Bearer ${AUTHKEY}" -s | jq '.items[].track | .name,.artists[0].name' -r -M | sed '/null/d'
-    		;;
-	*)
-    		curl -X GET "https://api.spotify.com/v1/playlists/${2}/tracks" -H "Authorization: Bearer ${AUTHKEY}" -s | jq '.items[].track | .name,.artists[0].name' -r -M | sed '/null/d'
-    		;;
-    esac
+# Songs func would go here - Spot(y)RIP is overkill, prob will add a rip function
+download() {
+	has youtube-dl && {
+		youtube-dl ytsearch1:"$(name | sed -e 's/.*: //g' -e 's/\,.*//' | tr '\n' ' ')" $([ "$1" = "download" ] &&  echo $@ | cut -d' ' -f2-)
+	} || {
+    echo "youtube-dl is missing!"; exit 1
+  }
 }
-help(){
-cat << 'EOF'
+status() {
+    name
+}
+playing() {
+    name
+}
+skip(){
+    next
+}
+pre(){
+    previous
+}
+prev(){
+    pre
+}
+####################################################################################
+####################################################################################
+help() {
+	cat << 'EOF'
+***
 Spotbash: Spotify Control API ~ Written in bash ~ By ThatGeekyWeeb (Mia)
-Usage: spotbash:
-[auth|device|search_*|play_track|*_volume|get_info|pre|trans|skip|pause|resume|loop|repeat|state|set|play*|*left|shuffle*|songs]
 ***
-auth: Print $AUTHKEY and exit
-device: Print first device ID and exit
-devices: List ALL devices and exit
-search_play: Search for "arg2" and play
-search_track: Search for "arg2" and output URI & Artist & name | "arg2" is interpreted as a track
-search_album: Seach for "arg2" and output URI, Artist, & name | "arg2" is interpreted as a album
-play_track: Play URI
-get_volume: Output player volume and exit
-set_volume: Set player volume to "arg2" and exit
-get_info: Get debugging info about currently playing device
-pre: Change playback to previous song
-trans: Transfer playback to "arg2" | arg2 must be DeviceID | Uses device func if "arg2" is empty
-skip: Change playback to next song
-pause: Pause playback
-resume: Resume playback
-loop: Loop track
-repeat: Repeat current album/playlist
-state: Output playback status and exit
-repeat_off: Disable loop/repeat
-repeat_state: Output playback repeat status and exit
-set: Move playback to "arg2" | "arg2" must be a device ID
-playlists: Output list of users playlists and exit
-play: Play "arg2" | "arg2" must be Album or Playlist URI
-playing: Print Song name followed by artist and exit
-left: Print time left in MS (exact) and exit
-minleft: Print time left in Mins (approximate) and exit
-shuffle: Enable/Disable Shuffle | Set to "arg2" if specified
-shuffle_state: Print state of shuffle and exit
-songs: Lists songs from current/"arg2" playlist | Mainly for automated song ripping | "arg2" must be playlist ID
-***
-"arg2" Usage:
-<command> <"arg2">
-IE: search_play "Man of The Year"
-NOTE: Use qoutes!
-***
+[auth] - Print $AUTHKEY and exit
+[device] - Print first device ID and exit
+[devices] - List ALL devices and exit
+[search_play] - Search for "arg2" and play
+[search_track] - Search for "arg2" and output URI & Artist & name | "arg2" is interpreted as a track
+[play_track] - Play URI
+[get_volume] - Output player volume and exit
+[set_volume] - Set player volume to "arg2" and exit
+[get_info] - Get debugging info about currently playing device
+[pre | prev | previous] - Change playback to previous song
+[skip | next] - Change playback to next song
+[pause] - Pause playback
+[resume] - Resume playback
+[loop] - Loop track
+[repeat] - Repeat current album/playlist
+[state] - Output playback status and exit
+[repeat_off] - Disable loop/repeat
+[repeat_state] - Output playback repeat status and exit
+[playlists] - Output list of users playlists and exit
+[play] - Play "arg2" | "arg2" must be Album or Playlist URI
+[playing] - Print Song name followed by artist and exit
+[left] - Print time left in MS (exact) and exit
+[minleft] - Print time left in Mins (approximate) and exit
+[shuffle] - Enable/Disable Shuffle | Set to "arg2" if specified
+[shuffle_state] - Print state of shuffle and exit
+[download] - Download currently playing song using ytdl $@ are ytdl flags
 EOF
-# Really important that you use qoutes with "arg2"!!!
 }
-clean_up # Cleaning before doing anything is prob good idea
+####################################################################################
+####################################################################################
+clean_up
+deps && {
+	auth && get_info && id
+} || {
+	exit 1
+}
 case $1 in
+		help)
+				help; exit 1
+				;;
     auth)
-        auth && echo "$AUTHKEY" && clean_up && exit 0
+        echo "$AUTHKEY" && clean_up; exit 0
         ;;
+		get_info)
+				cat "$infoF"; exit 0
+				;;
     search_play)
-	 auth
-	 id=$(auth && export AUTHKEY && curl -X "GET" "https://api.spotify.com/v1/me/player/devices" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer  $AUTHKEY" -s | jq '.["devices"][].id' | sed 's/"//g')
-	 export id
-	 printf "search='%b'" "${2}" > "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/search
-	 sed -i -e 's/[[:space:]]/%20/g' "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/search
-	 uri=$(search_track | cut -d'@' -f2- | cut -d$'\n' -f1 | sed 's/[[:space:]]//g')
-	 printf "uri='%b'" "${uri}" > "${XDG_CACHE_HOME:-$HOME/.cache/}"/spotbash/uri
-	 play_track "$@"
-	 clean_up
-	 exit 0
-	 ;;
+	 		auth
+	 		export id
+	 		printf "search='%b'" "${2}" > "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search"
+	 		sed -i -e 's/[[:space:]]/%20/g' "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search"
+	 		uri=$(search_track | cut -d'@' -f2- | cut -d$'\n' -f1 | sed 's/[[:space:]]//g')
+	 		printf "uri='%b'" "${uri}" > "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/uri"
+	 		play_track "$@"
+	 		clean_up
+	 		exit 0
+	 		;;
     "")
-	help && clean_up && exit 1
-	;;
+			help && clean_up; exit 1
+			;;
     *)
-	auth
-        id=$(auth && export AUTHKEY && curl -X "GET" "https://api.spotify.com/v1/me/player/devices" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer  $AUTHKEY" -s | jq '.["devices"][].id' | sed 's/"//g') 
-	export id
-	if ! type ${1} &>/dev/null ; then
-   		  help && exit 1
-		else
-    		  if ! ${1} "$@"; then
-       			echo "ERROR: Something went wrong!"
-       			echo "Possible issues are:"
-       			echo "1. A device may not currently be seleted"
-       			echo "2. The current user does not have Premium"
-		        echo "3. There is no connection"
-    		  else
-		       clean_up && exit 0
-		  fi
-                fi
-	clean_up
-        ;;
+			type ${1} 2>&1 1>/dev/null && {
+				${1} || {
+					echo "Whoops! Something went wrong..."
+				} && {
+					clean_up; exit 0
+				}
+			}	|| {
+				help; clean_up; exit 1
+			}
+			clean_up
+      ;;
 esac
-

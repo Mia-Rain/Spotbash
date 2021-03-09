@@ -1,0 +1,3 @@
+[submodule "spinner"]
+	path = spinner
+	url = git://github.com/swelljoe/spinner/

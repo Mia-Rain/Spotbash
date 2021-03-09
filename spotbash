@@ -193,6 +193,30 @@ pre(){
 prev(){
     pre
 }
+length() {
+		curl -X "GET" "https://api.spotify.com/v1/playlists/$2/tracks?market=US" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" -s | jq .total -Mr
+}
+spinner() {
+sp='/-\|'
+printf ' '
+while sleep 1.5; do
+    printf '\b%.1s' "$sp"
+    sp=${sp#?}${sp%???}
+done
+}
+
+rip() {
+		len="$(length 1 $2)"
+		for i in $(seq $len); do | spinner
+			echo "Listing..."
+			curl -X "GET" "https://api.spotify.com/v1/playlists/$2/tracks?market=US&limit=1&offset=$i" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" -s | jq '.items[].track | .name,.artists[].name ' -r | tr '\n' ' ' >> "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/ripL"
+		done
+		has youtube-dl && {
+			while read -r p; do
+				youtube-dl ytsearch1:"$p" $([ "$1" = "rip" ] &&  echo $@ | cut -d' ' -f3-)
+			done < "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/ripL"
+		}
+}
 ####################################################################################
 ####################################################################################
 help() {
@@ -262,7 +286,7 @@ case $1 in
 			;;
     *)
 			type ${1} 2>&1 1>/dev/null && {
-				${1} || {
+				${1} "$@" || {
 					echo "Whoops! Something went wrong..."
 				} && {
 					clean_up; exit 0

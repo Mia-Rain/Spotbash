@@ -1,11 +1,19 @@
 #!/bin/sh
+# First run
+[ -d "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/" ] || mkdir -p "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/"
+[ -f ./spinner/spinner.sh ] && {
+	 mv ./spinner/spinner.sh "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/"
+	 sed 's/SPINNER_SYMBOLS=.*/SPINNER_SYMBOLS="WIDE_ASCII_PROG"/' -i "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh" # Cache spinner
+	 sed 's,SPINNER_DONEFILE=.*,SPINNER_DONEFILE=~/ends,' -i "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh"
+}
+##
 has() {
 	case "$(command -v $1 2>/dev/null)" in
 		alias*|"") return 1
 	esac
 }
 deps() {
-  deps="jq curl" # Make sure deps can be found # Should make some sort of ssl check here
+  deps="jq curl" # Make sure deps can be found
   for i in $deps; do
   	if ! has $i; then
   		echo "$i IS MISSING!"; missing=$(($missing + 1))
@@ -21,7 +29,16 @@ deps() {
       	fi
       done
     }
-  }
+	}
+	# Check for ssl
+	curl -V | grep tls -i -q || {
+		curl -V | grep ssl -i -q || {
+			echo "!!SSL/TLS SUPPORT IS MISSING FROM CURL!!"
+			echo "!!SPOTBASH REQUIRES SSL SUPPORT!!"
+			exit 1
+		}
+	}
+	#
   export missing="no" # Finaly set missing to no - We can check this variable, instead of calling deps()
 }
 clean_up(){
@@ -196,25 +213,25 @@ prev(){
 length() {
 		curl -X "GET" "https://api.spotify.com/v1/playlists/$2/tracks?market=US" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" -s | jq .total -Mr
 }
-spinner() {
-sp='/-\|'
-printf ' '
-while sleep 1.5; do
-    printf '\b%.1s' "$sp"
-    sp=${sp#?}${sp%???}
-done
-}
-
 rip() {
-		len="$(length 1 $2)"
-		for i in $(seq $len); do | spinner
-			echo "Listing..."
-			curl -X "GET" "https://api.spotify.com/v1/playlists/$2/tracks?market=US&limit=1&offset=$i" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" -s | jq '.items[].track | .name,.artists[].name ' -r | tr '\n' ' ' >> "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/ripL"
-		done
+		len="$(length - $2)" # - Is placeholder
 		has youtube-dl && {
-			while read -r p; do
-				youtube-dl ytsearch1:"$p" $([ "$1" = "rip" ] &&  echo $@ | cut -d' ' -f3-)
-			done < "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/ripL"
+			echo "Working..."
+			[ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh" ] && {
+				. "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh"
+				spinner &
+				PID=$!
+			} || {
+				echo "spinner.sh cache missing... (No progress-bar)"
+				echo "Please wait..."
+			}
+			trap '[ -f ${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh ] && { kill $PID; exit 1 ; } || exit 1' INT TERM
+			for i in $(seq $len); do
+				youtube-dl ytsearch1:"$(curl -X "GET" "https://api.spotify.com/v1/playlists/$2/tracks?market=US&limit=1&offset=$i" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" -s | jq '.items[].track | .name,.artists[].name ' -r | tr '\n' ' ')"
+			done
+			[ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh" ] && {
+				kill $PID
+			}
 		}
 }
 ####################################################################################

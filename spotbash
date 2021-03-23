@@ -1,7 +1,7 @@
 #!/bin/sh
 # First run
 [ -d "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/" ] || mkdir -p "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/"
-[ -f ./spinner/spinner.sh ] && {
+{ [ -f ./spinner/spinner.sh ] && [ ! -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh"]; } && {
 	 mv ./spinner/spinner.sh "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/"
 	 sed 's/SPINNER_SYMBOLS=.*/SPINNER_SYMBOLS="WIDE_ASCII_PROG"/' -i "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh" # Cache spinner
 	 sed 's,SPINNER_DONEFILE=.*,SPINNER_DONEFILE=~/ends,' -i "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh"
@@ -49,7 +49,7 @@ clean_up(){
 }
 auth() {
   if [ ! -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/authkeys" ];then
-  	[ -f ./authkeys ] && . ./authkeys || {
+    { [ -f ./authkeys ] && . ./authkeys; } || {
       echo "ERROR: The AUTHKEYS cache file is missing!! Spotbash needs this file.. If you don't have it, reclone and re-run the setup"; exit 1
     }
   else
@@ -64,7 +64,8 @@ get_info(){
   export infoF="${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/info"
 }
 id() {
-  id=$(jq .device.id -r < "$infoF")
+  # the following is an unedited snippit from makefile - thanks :)
+  id=$(curl -X "GET" "https://api.spotify.com/v1/me/player/devices" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer  $AUTHKEY" -s | jq '[.devices[] | select(.is_active) | .id][0]' -r)
 }
 name(){
   IFS=""
@@ -92,7 +93,7 @@ previous(){
   curl -X "POST" -s -d device_id="$id" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" https://api.spotify.com/v1/me/player/previous
 }
 device(){
-  echo "Device: ${id}"
+  [ -n "$id" ] && echo "Device: ${id}" || echo "No device..."
 }
 devices(){
     IFS=""
@@ -103,14 +104,8 @@ set_volume(){
 }
 search_track(){
     IFS=""
-    if [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search" ]; then
-        . "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search"
-    else
-        search="$2"
-    fi
-    if ! echo "$search" | grep -q '[[:space:]]'; then
-      search=$(printf '%s' "$search" | sed 's/[[:space:]]/%20/g')
-    fi
+    [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search" ] && . "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search" || search="$2"
+    { echo "$search" | grep -q '[[:space:]]'; } && search=$(printf '%s' "$search" | sed 's/[[:space:]]/%20/g')
 		curl -s -X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=man%20of%20the%20year&limit=9&type=track" | jq '.tracks.items,del(.[]) | .[] | .name,[.artists[].name],.uri' -r -M | sed -e '/\[/d' -e '/\]/d' -e 's/[[:blank:]]"/By\: /g' -e 's/"//g' | tr '\n' '~' | sed -e 's/~spotify\:/ @ spotify\:/g' -e 's/~ By\:/ By:/g' | tr '~' '\n'
 }
 #search_album(){
@@ -126,11 +121,7 @@ search_track(){
 #    curl -s =X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${search}&limit=9&type=album" | jq '.[] | .items | .[] | .["name"],[ .artists | .[] | .name ],.["uri"]' | sed -e 's/\[//g' -e 's/\]//g' -e '/^[[:space:]]*$/d' -e 's/,//g' -e 's/"//g' -e '/^ *$/d' | sed -z -e 's/\n  /  By: /g' -e 's/\nspotify:/ @ spotify:/g'
 #} POSIX SED PAIN
 play_track(){
-    if [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/uri" ]; then
-        . "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/uri"
-    else
-        uri="$2"
-    fi
+    [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/uri" ] && . "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/uri" || uri="$2"
     curl -s -X PUT "https://api.spotify.com/v1/me/player/play?device_${id}" --data "{\"uris\":[\"$uri\"]}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
 }
 state() {
@@ -155,12 +146,11 @@ play(){
   curl -X "PUT" "https://api.spotify.com/v1/me/player/play?device_${id}" --data "{\"context_uri\":\$2\"}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
 }
 trans(){
-    if [ ! -z $2 ]; then
+    [ ! -z $2 ] && {
 	     export TRANS_ID=${2}
-    else
-	     TRANS_ID=$id
-       export TRANS_ID
-    fi
+    } || {
+	     export TRANS_ID=$id
+    }
     curl -X "PUT" "https://api.spotify.com/v1/me/player" --data "{\"device_ids\":[\"${TRANS_ID}\"]}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
 }
 shuffle_state(){
@@ -232,23 +222,23 @@ rip() {
 			[ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh" ] && {
 				kill $PID
 			}
-		}
+    } || { echo "youtube-dl is required for rip()... Please install it"; exit 1; }
 }
 ####################################################################################
 ####################################################################################
 help() {
-	cat << 'EOF'
+	cat << EOF
 ***
 Spotbash: Spotify Control API ~ Written in bash ~ By ThatGeekyWeeb (Mia)
 ***
-[auth] - Print $AUTHKEY and exit
+[auth] - Print ${AUTHKEY:-'$AUTHKEY'} and exit
 [device] - Print first device ID and exit
 [devices] - List ALL devices and exit
-[search_play] - Search for "arg2" and play
-[search_track] - Search for "arg2" and output URI & Artist & name | "arg2" is interpreted as a track
-[play_track] - Play URI
+[search_play] - Search for ${2:-'$2'} and play | ${2:-'$2'} must be a track
+[search_track] - Search for ${2:-'$2'} and output URI & Artist & name | ${2:-'$2'} is interpreted as a track
+[play_track] - Play Track URI
 [get_volume] - Output player volume and exit
-[set_volume] - Set player volume to "arg2" and exit
+[set_volume] - Set player volume to ${2:-'$2'} and exit
 [get_info] - Get debugging info about currently playing device
 [pre | prev | previous] - Change playback to previous song
 [skip | next] - Change playback to next song
@@ -260,13 +250,13 @@ Spotbash: Spotify Control API ~ Written in bash ~ By ThatGeekyWeeb (Mia)
 [repeat_off] - Disable loop/repeat
 [repeat_state] - Output playback repeat status and exit
 [playlists] - Output list of users playlists and exit
-[play] - Play "arg2" | "arg2" must be Album or Playlist URI
+[play] - Play ${2:-'$2'} | ${2:-'$2'} must be Album or Playlist URI
 [playing] - Print Song name followed by artist and exit
 [left] - Print time left in MS (exact) and exit
 [minleft] - Print time left in Mins (approximate) and exit
-[shuffle] - Enable/Disable Shuffle | Set to "arg2" if specified
+[shuffle] - Enable/Disable Shuffle | Set to ${2:-'$2'} if specified
 [shuffle_state] - Print state of shuffle and exit
-[download] - Download currently playing song using ytdl $@ are ytdl flags
+[download] - Download currently playing song using ytdl | "${@:-'$@'}" are ytdl flags
 EOF
 }
 ####################################################################################

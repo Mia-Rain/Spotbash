@@ -106,7 +106,7 @@ search_track(){
     IFS=""
     [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search" ] && . "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search" || search="$2"
     { echo "$search" | grep -q '[[:space:]]'; } && search=$(printf '%s' "$search" | sed 's/[[:space:]]/%20/g')
-		curl -s -X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=man%20of%20the%20year&limit=9&type=track" | jq '.tracks.items,del(.[]) | .[] | .name,[.artists[].name],.uri' -r -M | sed -e '/\[/d' -e '/\]/d' -e 's/[[:blank:]]"/By\: /g' -e 's/"//g' | tr '\n' '~' | sed -e 's/~spotify\:/ @ spotify\:/g' -e 's/~ By\:/ By:/g' | tr '~' '\n'
+    curl -s X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${search}&limit=9&type=track" | jq '.tracks.items,del(.[]) | .[] | .name,[.artists[].name],.uri' -r -M | sed -e '/\[/d' -e '/\]/d' -e 's/[[:blank:]]"/By\: /g' -e 's/"//g' | tr '\n' '~' | sed -e 's/~spotify\:/ @ spotify\:/g' -e 's/~ By\:/ By:/g' | tr '~' '\n'
 }
 #search_album(){
 #    IFS=""

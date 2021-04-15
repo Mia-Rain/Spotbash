@@ -6,7 +6,7 @@
 1. Head [here (`https://developer.spotify.com/dashboard/applications`)](https://developer.spotify.com/dashboard/applications)  
   - Create or use and existing app
   - Remember it's Client ID and Client Secret
-  - Edit it's settings to add `http://www.thatgeekyweeb.is-dummy-thi.cc/REKEY/callback/` and `https://www.thatgeekyweeb.is-dummy-thi.cc/REKEY/callback/` as callback URI's (`HTTP` & `HTTPS`)
-2. Head to [REKEY (`https://www.thatgeekyweeb.is-dummy-thi.cc/REKEY/`)](https://www.thatgeekyweeb.is-dummy-thi.cc/REKEY/)
+  - Edit it's settings to add `http://thatgeekyweeb.github.io/REKEY/callback/` and `https://thatgeekyweeb.github.io/REKEY/callback/` as callback URI's (`HTTP` & `HTTPS`)
+2. Head to [REKEY (`https://thatgeekyweeb.github.io/REKEY/`)](https://thatgeekyweeb.github.io/REKEY/)
   - Press start and input the requested data
 3. Click "`Click to save AUTHKEYS`" and save to `~/.cache/spotbash/authkeys`

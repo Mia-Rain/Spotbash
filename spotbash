@@ -69,13 +69,24 @@ id() {
 }
 name(){
   IFS=""
-  artistC=$(jq .item.name,.item.album.artists[].name < "$infoF" | sed -e 's/"//g' -e '0,/^/{s/^/Playing: /}' | tr '\n' '~' | sed -e 's/~/\nBy: /' | grep "~" | awk -F"~" '{print NF-1}')
+  artemp=$(mktemp)
+  artistC=$(jq .item.name,.item.album.artists[].name < "$infoF" | sed -e 's/"//g' -e '0,/^/{s/^/Playing: /}' | tr '\n' '~' | sed -e 's/~/\nBy: /' | awk -F"~" '/~/ {print NF-1}')
   artist=$(jq .item.name,.item.album.artists[].name < "$infoF" | sed -e 's/"//g' -e '0,/^/{s/^/Playing: /}' | tr '\n' '~' | sed 's/~/\nBy: /' )
-  if [ $artistC != 1 ]; then
-    echo $artist | sed -e 's/~/\, /' -e 's/~/\n/' | tr '\n' '~' | sed 's/~~/\n/' | tr '~' '\n'
+  if [ "$artistC" != 1 ]; then
+    echo $artist | sed -e 's/~/\, /' -e 's/~/\n/' | tr '\n' '~' | sed 's/~~/\n/' | tr '~' '\n' > $artemp
   else
-    echo $artist | sed 's/~/\n/' | tr '\n' '~' | sed 's/~~/\n/' | tr '~' '\n'
+    echo $artist | sed 's/~/\n/' | tr '\n' '~' | sed 's/~~/\n/' | tr '~' '\n' > $artemp
   fi
+  tac $artemp | grep $'\n*' -m 1 | grep ',' -q || {
+    cat $artemp | tr '\n' '~' | sed -E -e 's/(.*)~/\1SPOTEXLINE/' -e 's/(.*)~/\1, /' -e 's/SPOTEXLINE/~/' | tr '~' '\n' | cat > $artemp
+    # tr often breaks when being redirected
+    # FINAL FIX - Replace ',' with a newline when only 1 line exists
+    [ ! "$(wc -l < $artemp)" -gt 1 ] && {
+      sed 's/,/\n/' -i $artemp
+      sed 's/ By:/By:/' -i $artemp
+    }
+  }
+  cat $artemp ; rm $artemp -rf
 }
 get_volume(){
   jq .device.volume_percent < "$infoF"

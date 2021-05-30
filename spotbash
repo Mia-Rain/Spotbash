@@ -63,6 +63,9 @@ get_info(){
   #cat "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/info"
   export infoF="${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/info"
 }
+track_info(){
+  curl -s -X "GET" "https://api.spotify.com/v1/tracks/${2:-$1}" -H "Authorization: Bearer $AUTHKEY" -H "Accept: application/json" -H "Content-Type: application/json"
+}
 id() {
   # the following is an unedited snippit from makefile - thanks :)
   id=$(curl -X "GET" "https://api.spotify.com/v1/me/player/devices" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer  $AUTHKEY" -s | jq '[.devices[] | select(.is_active) | .id][0]' -r)
@@ -235,6 +238,26 @@ rip() {
       }
     } || { echo "youtube-dl is required for rip()... Please install it"; exit 1; }
 }
+grab() {
+  has mediainfo && {
+    [ -f "$2" ] && {
+      Tname=$(mediainfo "$2" | grep "Track name" | tr -s ' ' | cut -d':' -f2); Tname=${Tname#' '}
+      Tart=$(mediainfo "$2" | grep "Performer" | tr -s ' ' | cut -d':' -f2); Tart=${Tart#' '}
+      echo "$Tname $Tart"
+      Tid=$(search_track - "$Tname $Tart" | head -1 | sed 's/.*://')
+      Aurl=$(track_info "$Tid" | jq '.album.images[1].url' -r)
+      [ "$Aurl" != "null" ] && { curl -L# "$Aurl" --output "$2.jpg"; } || {
+        echo "$2 Could not be found..."; exit 1
+      }
+      has eyeD3 && {
+        eyeD3 --add-image "$2.jpg:FRONT_COVER" "$2"
+        rm "$2.jpg"
+      } || { 
+        echo "Could not find eyeD3, cannot embed image... Image saved to $2.jpg"
+      }
+    } || { echo "Your file is missing..."; exit 1 ; }
+  } || { echo "mediainfo is required for (a)grab()..."; exit 1; }
+}
 ####################################################################################
 ####################################################################################
 help() {
@@ -242,7 +265,7 @@ help() {
 ***
 Spotbash: Spotify Control API ~ Written in bash ~ By ThatGeekyWeeb (Mia)
 ***
-[auth] - Print ${AUTHKEY:-'\$AUTH KEY'} and exit
+[auth] - Print '\$AUTHKEY' and exit
 [device] - Print first device ID and exit
 [devices] - List ALL devices and exit
 [search_play] - Search for ${2:-'\$2'} and play | ${2:-'\$2'} must be a track
@@ -268,6 +291,8 @@ Spotbash: Spotify Control API ~ Written in bash ~ By ThatGeekyWeeb (Mia)
 [shuffle] - Enable/Disable Shuffle | Set to ${2:-'\$2'} if specified
 [shuffle_state] - Print state of shuffle and exit
 [download] - Download currently playing song using ytdl | "${@:-'\$@'}" are ytdl flags
+[grab|agrab] - Grab the album art for a file by searching for it using mp4 mediainfo and embed | ${2:-'\$2'} must be a file
+[track_info] - Return info for ${2:-'\$2'} | ${2:-'\$2'} must be a track ID
 EOF
 }
 ####################################################################################
@@ -299,6 +324,9 @@ case $1 in
        clean_up
        exit 0
        ;;
+    agrab)
+      grab
+      ;;
     "")
       help && clean_up; exit 1
       ;;
@@ -309,7 +337,7 @@ case $1 in
         } && {
           clean_up; exit 0
         }
-      }  || {
+      } || {
         help; clean_up; exit 1
       }
       clean_up

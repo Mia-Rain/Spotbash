@@ -3,8 +3,8 @@
 [ -d "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/" ] || mkdir -p "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/"
 { [ -f ./spinner/spinner.sh ] && [ ! -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh"]; } && {
    mv ./spinner/spinner.sh "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/"
-   sed 's/SPINNER_SYMBOLS=.*/SPINNER_SYMBOLS="WIDE_ASCII_PROG"/' -i "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh" # Cache spinner
-   sed 's,SPINNER_DONEFILE=.*,SPINNER_DONEFILE=~/ends,' -i "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh"
+   sed -E 's/SPINNER_SYMBOLS=.*/SPINNER_SYMBOLS="WIDE_ASCII_PROG"/' -i "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh" # Cache spinner
+   sed -E 's,SPINNER_DONEFILE=.*,SPINNER_DONEFILE=~/ends,' -i "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh"
 }
 ##
 has() {
@@ -73,20 +73,20 @@ id() {
 name(){
   IFS=""
   artemp=$(mktemp)
-  artistC=$(jq .item.name,.item.album.artists[].name < "$infoF" | sed -e 's/"//g' -e '0,/^/{s/^/Playing: /}' | tr '\n' '~' | sed -e 's/~/\nBy: /' | awk -F"~" '/~/ {print NF-1}')
-  artist=$(jq .item.name,.item.album.artists[].name < "$infoF" | sed -e 's/"//g' -e '0,/^/{s/^/Playing: /}' | tr '\n' '~' | sed 's/~/\nBy: /' )
+  artistC=$(jq .item.name,.item.album.artists[].name < "$infoF" | sed -E -e 's/"//g' -e '0,/^/{s/^/Playing: /}' | tr '\n' '~' | sed -E -e 's/~/\nBy: /' | awk -F"~" '/~/ {print NF-1}')
+  artist=$(jq .item.name,.item.album.artists[].name < "$infoF" | sed -E -e 's/"//g' -e '0,/^/{s/^/Playing: /}' | tr '\n' '~' | sed -E 's/~/\nBy: /' )
   if [ "$artistC" != 1 ]; then
-    echo $artist | sed -e 's/~/\, /' -e 's/~/\n/' | tr '\n' '~' | sed 's/~~/\n/' | tr '~' '\n' > $artemp
+    echo $artist | sed -E -e 's/~/\, /' -e 's/~/\n/' | tr '\n' '~' | sed -E 's/~~/\n/' | tr '~' '\n' > $artemp
   else
-    echo $artist | sed 's/~/\n/' | tr '\n' '~' | sed 's/~~/\n/' | tr '~' '\n' > $artemp
+    echo $artist | sed -E 's/~/\n/' | tr '\n' '~' | sed -E 's/~~/\n/' | tr '~' '\n' > $artemp
   fi
   tac $artemp | grep $'\n*' -m 1 | grep ',' -q || {
-    cat $artemp | tr '\n' '~' | sed -E -e 's/(.*)~/\1SPOTEXLINE/' -e 's/(.*)~/\1, /' -e 's/SPOTEXLINE/~/' | tr '~' '\n' | cat > $artemp
+    cat $artemp | tr '\n' '~' | sed -E -E -e 's/(.*)~/\1SPOTEXLINE/' -e 's/(.*)~/\1, /' -e 's/SPOTEXLINE/~/' | tr '~' '\n' | cat > $artemp
     # tr often breaks when being redirected
     # FINAL FIX - Replace ',' with a newline when only 1 line exists
     [ ! "$(wc -l < $artemp)" -gt 1 ] && {
-      sed 's/,/\n/' -i $artemp
-      sed 's/ By:/By:/' -i $artemp
+      sed -E 's/,/\n/' -i $artemp
+      sed -E 's/ By:/By:/' -i $artemp
     }
   }
   cat $artemp ; rm $artemp -rf
@@ -119,8 +119,8 @@ set_volume(){
 search_track(){
     IFS=""
     [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search" ] && . "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search" || search="$2"
-    { echo "$search" | grep -q '[[:space:]]'; } && search=$(printf '%s' "$search" | sed 's/[[:space:]]/%20/g')
-    curl -s X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${search}&limit=9&type=track" | jq '.tracks.items,del(.[]) | .[] | .name,[.artists[].name],.uri' -r -M | sed -e '/\[/d' -e '/\]/d' -e 's/[[:blank:]]"/By\: /g' -e 's/"//g' | tr '\n' '~' | sed -e 's/~spotify\:/ @ spotify\:/g' -e 's/~ By\:/ By:/g' | tr '~' '\n'
+    { echo "$search" | grep -q '[[:space:]]'; } && search=$(printf '%s' "$search" | sed -E 's/[[:space:]]/%20/g')
+    curl -s X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${search}&limit=9&type=track" | jq '.tracks.items,del(.[]) | .[] | .name,[.artists[].name],.uri' -r -M | sed -E -e '/\[/d' -e '/\]/d' -e 's/[[:blank:]]"/By\: /g' -e 's/"//g' | tr '\n' '~' | sed -E -e 's/~spotify\:/ @ spotify\:/g' -e 's/~ By\:/ By:/g' | tr '~' '\n'
 }
 #search_album(){
 #    IFS=""
@@ -130,9 +130,9 @@ search_track(){
 #        search="$2"
 #    fi
 #    if ! echo "$search" | grep -q '[[:space:]]'; then
-#      search=$(printf '%s' "$search" | sed 's/[[:space:]]/%20/g')
+#      search=$(printf '%s' "$search" | sed -E 's/[[:space:]]/%20/g')
 #    fi
-#    curl -s =X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${search}&limit=9&type=album" | jq '.[] | .items | .[] | .["name"],[ .artists | .[] | .name ],.["uri"]' | sed -e 's/\[//g' -e 's/\]//g' -e '/^[[:space:]]*$/d' -e 's/,//g' -e 's/"//g' -e '/^ *$/d' | sed -z -e 's/\n  /  By: /g' -e 's/\nspotify:/ @ spotify:/g'
+#    curl -s =X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${search}&limit=9&type=album" | jq '.[] | .items | .[] | .["name"],[ .artists | .[] | .name ],.["uri"]' | sed -E -e 's/\[//g' -e 's/\]//g' -e '/^[[:space:]]*$/d' -e 's/,//g' -e 's/"//g' -e '/^ *$/d' | sed -E -z -e 's/\n  /  By: /g' -e 's/\nspotify:/ @ spotify:/g'
 #} POSIX SED PAIN
 play_track(){
     [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/uri" ] && . "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/uri" || uri="$2"
@@ -194,7 +194,7 @@ shuffle() {
 # Songs func would go here - Spot(y)RIP is overkill, prob will add a rip function
 download() {
   has youtube-dl && {
-    youtube-dl ytsearch1:"$(name | sed -e 's/.*: //g' -e 's/\,.*//' | tr '\n' ' ')" $([ "$1" = "download" ] &&  echo $@ | cut -d' ' -f2-)
+    youtube-dl ytsearch1:"$(name | sed -E -e 's/.*: //g' -e 's/\,.*//' | tr '\n' ' ')" $([ "$1" = "download" ] &&  echo $@ | cut -d' ' -f2-)
   } || {
     echo "youtube-dl is missing!"; exit 1
   }
@@ -244,7 +244,7 @@ grab() {
       Tname=$(mediainfo "$2" | grep "Track name" | tr -s ' ' | cut -d':' -f2); Tname=${Tname#' '}
       Tart=$(mediainfo "$2" | grep "Performer" | tr -s ' ' | cut -d':' -f2); Tart=${Tart#' '}
       echo "$Tname $Tart"
-      Tid=$(search_track - "$Tname $Tart" | head -1 | sed 's/.*://')
+      Tid=$(search_track - "$Tname $Tart" | head -1 | sed -E 's/.*://')
       Aurl=$(track_info "$Tid" | jq '.album.images[1].url' -r)
       [ "$Aurl" != "null" ] && { curl -L# "$Aurl" --output "$2.jpg"; } || {
         echo "$2 Could not be found..."; exit 1
@@ -317,8 +317,8 @@ case $1 in
        auth
        export id
        printf "search='%b'" "${2}" > "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search"
-       sed -i -e 's/[[:space:]]/%20/g' "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search"
-       uri=$(search_track | cut -d'@' -f2- | cut -d$'\n' -f1 | sed 's/[[:space:]]//g')
+       sed -E -i -e 's/[[:space:]]/%20/g' "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/search"
+       uri=$(search_track | cut -d'@' -f2- | cut -d$'\n' -f1 | sed -E 's/[[:space:]]//g')
        printf "uri='%b'" "${uri}" > "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/uri"
        play_track "$@"
        clean_up

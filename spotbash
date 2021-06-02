@@ -239,24 +239,20 @@ rip() {
     } || { echo "youtube-dl is required for rip()... Please install it"; exit 1; }
 }
 grab() {
-  has mediainfo && {
+  has eyeD3 && {
     [ -f "$2" ] && {
-      Tname=$(mediainfo "$2" | grep "Track name" | tr -s ' ' | cut -d':' -f2); Tname=${Tname#' '}
-      Tart=$(mediainfo "$2" | grep "Performer" | tr -s ' ' | cut -d':' -f2); Tart=${Tart#' '}
+      Tname=$(eyeD3 "$2" | grep "title" | cut -d':' -f2); Tname=${Tname#' '}
+      Tart=$(eyeD3 "$2" | grep "artist" | cut -d':' -f2); Tart=${Tart#' '}
       echo "$Tname $Tart"
       Tid=$(search_track - "$Tname $Tart" | head -1 | sed -E 's/.*://')
       Aurl=$(track_info "$Tid" | jq '.album.images[1].url' -r)
       [ "$Aurl" != "null" ] && { curl -L# "$Aurl" --output "$2.jpg"; } || {
         echo "$2 Could not be found..."; exit 1
       }
-      has eyeD3 && {
-        eyeD3 --add-image "$2.jpg:FRONT_COVER" "$2"
-        rm "$2.jpg"
-      } || { 
-        echo "Could not find eyeD3, cannot embed image... Image saved to $2.jpg"
-      }
+      eyeD3 --add-image "$2.jpg:FRONT_COVER" "$2"
+      rm "$2.jpg"
     } || { echo "Your file is missing..."; exit 1 ; }
-  } || { echo "mediainfo is required for (a)grab()..."; exit 1; }
+  } || { echo "eyeD3 is required for (a)grab()..."; exit 1; }
 }
 ####################################################################################
 ####################################################################################

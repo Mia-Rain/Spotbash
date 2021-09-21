@@ -1,5 +1,5 @@
 
-<h1> Spotbash </h1><p><p><img src="https://cdn.discordapp.com/attachments/699685435198144553/758393878947561522/spotbash_ex2.png" width="15%" align="right"> </p>Spotify Control API ~ Written in bash, using curl.</p>
+<h1> Spotbash </h1><p><p><img src="https://cdn.discordapp.com/attachments/699685435198144553/758393878947561522/spotbash_ex2.png" width="15%" align="right"> </p>Spotify Control API ~ Written in POSIX sh, using curl + jq</p>
 
 ***
 ## Installation

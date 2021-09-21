@@ -1,11 +1,6 @@
 #!/bin/sh
 # First run
 [ -d "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/" ] || mkdir -p "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/"
-{ [ -f ./spinner/spinner.sh ] && [ ! -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh"]; } && {
-   mv ./spinner/spinner.sh "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/"
-   sed -E 's/SPINNER_SYMBOLS=.*/SPINNER_SYMBOLS="WIDE_ASCII_PROG"/' -i "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh" # Cache spinner
-   sed -E 's,SPINNER_DONEFILE=.*,SPINNER_DONEFILE=~/ends,' -i "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh"
-}
 ##
 has() {
   case "$(command -v $1 2>/dev/null)" in
@@ -153,6 +148,40 @@ repeat_off(){
 repeat_state(){
   printf 'Loop State: %s\n' $(jq -r .repeat_state < "$infoF")
 }
+playlist(){
+  [ "$2" ] && {
+    case "$2" in
+      list|ls|show) [ "$3" ] && { pl - "$3";} || playlists ;;
+      add) [ "$3" ] && { pa - "$3" "$4" ; } || [ ] # [ ] returns 1; which would cause || { to be called   
+    esac
+  } || {
+    printf 'playlist: playlist subcommands
+---
+[list|ls] - list playlists || uses old playlists()
+[show|list|ls] - lists all songs in $2 || requires $2 
+[add] - add track to $2 
+'
+# [del] - remove $3 from $2
+# [del] - delete playlist $2 || if $3 is unset # add double check
+# [rip] - rips all songs in $2 using ytdl || WIP 
+# [create|make] - create new playlist with name $2
+# TODO ^
+  }
+}
+pl() { # playlist loop || show
+  len="$(length - $2)"
+  n=0; while [ $n -le $len ]; do
+    curl -sL -X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/playlists/$2/tracks?fields=items(track(name%2Curi))&limit=100&offset=${n}" | jq '.[] | .[].track | .name + " - " + .uri + " "' -r | sed '/ -  /d' # + " " is for sed; if 2 spaces after - then uri was missing; so delete
+    : $((n+=100))
+  done
+  # rip will use this in the future
+}
+pa() { # add func
+  IFS=", "; for i in ${3}; do
+    printf 'Adding %s to %s\n' "$i" "$2" 
+    curl -sL -X "POST" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/playlists/$2/tracks?uris=${i}" | jq -M || printf 'failed to add %s\n' "$i"
+  done
+}
 playlists(){
     echo 'Playlists:' && curl -s -X GET "https://api.spotify.com/v1/me/playlists" -H 'Accept: application/json' -H 'Content-Type: application/json' -H "Authorization: Bearer $AUTHKEY" | jq '.items[] | .name,.uri' -r
 }
@@ -217,27 +246,6 @@ prev(){
 length() {
     curl -X "GET" "https://api.spotify.com/v1/playlists/$2/tracks?market=US" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" -s | jq .total -Mr
 }
-rip() {
-    len="$(length - $2)" # - Is placeholder
-    has youtube-dl && {
-      echo "Working..."
-      [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh" ] && {
-        . "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh"
-        spinner &
-        PID=$!
-      } || {
-        echo "spinner.sh cache missing... (No progress-bar)"
-        echo "Please wait..."
-      }
-      trap '[ -f ${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh ] && { kill $PID; exit 1 ; } || exit 1' INT TERM
-      for i in $(seq $len); do
-        youtube-dl ytsearch1:"$(curl -X "GET" "https://api.spotify.com/v1/playlists/$2/tracks?market=US&limit=1&offset=$i" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" -s | jq '.items[].track | .name,.artists[].name ' -r | tr '\n' ' ')"
-      done
-      [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/spinner.sh" ] && {
-        kill $PID
-      }
-    } || { echo "youtube-dl is required for rip()... Please install it"; exit 1; }
-}
 grab() {
   has eyeD3 && {
     [ -f "$2" ] && {
@@ -259,7 +267,7 @@ grab() {
 help() {
   cat << EOF
 ***
-Spotbash: Spotify Control API ~ Written in bash ~ By ThatGeekyWeeb (Mia)
+Spotbash: Spotify Control API/Client ~ Written in POSIX sh ~ By Mia
 ***
 [auth] - Print '\$AUTHKEY' and exit
 [device] - Print first device ID and exit
@@ -279,7 +287,6 @@ Spotbash: Spotify Control API ~ Written in bash ~ By ThatGeekyWeeb (Mia)
 [state] - Output playback status and exit
 [repeat_off] - Disable loop/repeat
 [repeat_state] - Output playback repeat status and exit
-[playlists] - Output list of users playlists and exit
 [play] - Play ${2:-'\$2'} | ${2:-'\$2'} must be Album or Playlist URI
 [playing] - Print Song name followed by artist and exit
 [left] - Print time left in MS (exact) and exit
@@ -289,8 +296,11 @@ Spotbash: Spotify Control API ~ Written in bash ~ By ThatGeekyWeeb (Mia)
 [download] - Download currently playing song using ytdl | "${@:-'\$@'}" are ytdl flags
 [grab|agrab] - Grab the album art for a file by searching for it using mp4 mediainfo and embed | ${2:-'\$2'} must be a file
 [track_info] - Return info for ${2:-'\$2'} | ${2:-'\$2'} must be a track ID
+--- Parents/Profiles
+[playlist] - playlist subcommands/children | see playlist()
 EOF
-}
+} # should be noted that subcommands can be called without their parent
+# IE: playlists <>; pa <> <> # would work perfectly fine
 ####################################################################################
 ####################################################################################
 clean_up

@@ -33,8 +33,7 @@ deps() {
       exit 1
     }
   }
-  #
-  export missing="no" # Finaly set missing to no - We can check this variable, instead of calling deps()
+  # old missing=no was literally useless ...
 }
 clean_up(){
   clean="search uri info"
@@ -130,40 +129,44 @@ search_track(){
 #    curl -s =X "GET" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/search?q=${search}&limit=9&type=album" | jq '.[] | .items | .[] | .["name"],[ .artists | .[] | .name ],.["uri"]' | sed -E -e 's/\[//g' -e 's/\]//g' -e '/^[[:space:]]*$/d' -e 's/,//g' -e 's/"//g' -e '/^ *$/d' | sed -E -z -e 's/\n  /  By: /g' -e 's/\nspotify:/ @ spotify:/g'
 #} POSIX SED PAIN
 play_track(){
-    [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/uri" ] && . "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/uri" || uri="$2"
-    curl -s -X PUT "https://api.spotify.com/v1/me/player/play?device_${id}" --data "{\"uris\":[\"$uri\"]}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
+  [ -f "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/uri" ] && . "${XDG_CACHE_HOME:-$HOME/.cache/}/spotbash/uri" || uri="$2"
+  curl -s -X PUT "https://api.spotify.com/v1/me/player/play?device_${id}" --data "{\"uris\":[\"$uri\"]}" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY"
 }
 state() {
   printf 'Playing: %s\n' $(jq .is_playing -r < "$infoF")
 }
 loop(){
-    curl -X "PUT" -d device_id="$id" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/me/player/repeat?state=track"
+  curl -X "PUT" -d device_id="$id" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/me/player/repeat?state=track"
 }
 repeat(){
-    curl -X "PUT" -d device_id="$id" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/me/player/repeat?state=context"
+  curl -X "PUT" -d device_id="$id" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/me/player/repeat?state=context"
 }
 repeat_off(){
-    curl -X "PUT" -d device_id="$id" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/me/player/repeat?state=off"
+  curl -X "PUT" -d device_id="$id" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/me/player/repeat?state=off"
 }
 repeat_state(){
   printf 'Loop State: %s\n' $(jq -r .repeat_state < "$infoF")
+}
+uri_handle(){ # handles spotify uris by ripping there id's 
+  IFS=":"; set -- "${@}"; export uri-id="$3"; export uri-type="$2"
 }
 playlist(){
   [ "$2" ] && {
     case "$2" in
       list|ls|show) [ "$3" ] && { pl - "$3";} || playlists ;;
-      add) [ "$3" ] && { pa - "$3" "$4" ; } || [ ] # [ ] returns 1; which would cause || { to be called   
+      add) [ "$3" ] && { pa - "$3" "$4";} || [ ] ;; # [ ] returns 1; which would cause || { to be called   
+      # rip) [ "$3" ] && { prip - "$3" "$4";} || [ ] ;; # WIP
     esac
   } || {
     printf 'playlist: playlist subcommands
 ---
 [list|ls] - list playlists || uses old playlists()
 [show|list|ls] - lists all songs in $2 || requires $2 
-[add] - add track to $2 
+[add] - add track to $2
 '
+# [rip] - runs download() for all items in playlist $2 || WIP
 # [del] - remove $3 from $2
 # [del] - delete playlist $2 || if $3 is unset # add double check
-# [rip] - rips all songs in $2 using ytdl || WIP 
 # [create|make] - create new playlist with name $2
 # TODO ^
   }
@@ -182,6 +185,17 @@ pa() { # add func
     curl -sL -X "POST" -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $AUTHKEY" "https://api.spotify.com/v1/playlists/$2/tracks?uris=${i}" | jq -M || printf 'failed to add %s\n' "$i"
   done
 }
+#prip(){ # download() would not work for this; WIP
+#  slist=$(pl - $2); pid="$2"; skipuri="$3"; for i in "$slist"; do
+#    IFS="-"; set -- "$i"; unset IFS # uri is now $2 with name as $1
+#    n="$(printf '%s' ${1} | sed -e 's/ /_/g' -e 's/,//g' -e 's,/,,g' -e 's/(.*)//g')"
+#    uri_handle - "$2"; IFS=" "; for s in ${skipuri}; do 
+#      [ ! "$s" = "$uri-id" ] && {
+#        "$uri-id" "$n.${format:-${3:-mp3}}"
+#      :;} || { echo "$s was set in skipuri... skipping"; } # this allows skipping songs that may not be found as the first match
+#    done
+#  done
+#}
 playlists(){
     echo 'Playlists:' && curl -s -X GET "https://api.spotify.com/v1/me/playlists" -H 'Accept: application/json' -H 'Content-Type: application/json' -H "Authorization: Bearer $AUTHKEY" | jq '.items[] | .name,.uri' -r
 }
@@ -223,7 +237,8 @@ shuffle() {
 # Songs func would go here - Spot(y)RIP is overkill, prob will add a rip function
 download() {
   has youtube-dl && {
-    youtube-dl ytsearch1:"$(name | sed -E -e 's/.*: //g' -e 's/\,.*//' | tr '\n' ' ')" $([ "$1" = "download" ] &&  echo $@ | cut -d' ' -f2-)
+    n="${3:-$(name | sed -E -e 's/.*: //g' -e 's/\,.*//' | tr '\n' ' ')}"
+    youtube-dl ytsearch1:"$n" $([ "$1" = "download" ] &&  echo $@ | cut -d' ' -f2-)
   } || {
     echo "youtube-dl is missing!"; exit 1
   }

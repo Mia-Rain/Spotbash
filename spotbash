@@ -270,18 +270,20 @@ grab() {
 ####################################################################################
 ####################################################################################
 help() {
-  cat << EOF
+  while read -r p; do 
+    printf '%s\n' "$p"
+  done << 'EOF'
 ***
 Spotbash: Spotify Control API/Client ~ Written in POSIX sh ~ By Mia
 ***
-[auth] - Print '\$AUTHKEY' and exit
+[auth] - Print '$AUTHKEY' and exit
 [device] - Print first device ID and exit
 [devices] - List ALL devices and exit
-[search_play] - Search for ${2:-'\$2'} and play | ${2:-'\$2'} must be a track
-[search_track] - Search for ${2:-'\$2'} and output URI & Artist & name | ${2:-'\$2'} is interpreted as a track
+[search_play] - Search for $2 and play | $2 must be a track
+[search_track] - Search for $2 and output URI & Artist & name | $2is interpreted as a track
 [play_track] - Play Track URI
 [get_volume] - Output player volume and exit
-[set_volume] - Set player volume to ${2:-'\$2'} and exit
+[set_volume] - Set player volume to $2: and exit
 [get_info] - Get debugging info about currently playing device
 [pre | prev | previous] - Change playback to previous song
 [skip | next] - Change playback to next song
@@ -292,15 +294,15 @@ Spotbash: Spotify Control API/Client ~ Written in POSIX sh ~ By Mia
 [state] - Output playback status and exit
 [repeat_off] - Disable loop/repeat
 [repeat_state] - Output playback repeat status and exit
-[play] - Play ${2:-'\$2'} | ${2:-'\$2'} must be Album or Playlist URI
+[play] - Play $2 | $2 must be Album or Playlist URI
 [playing] - Print Song name followed by artist and exit
 [left] - Print time left in MS (exact) and exit
 [minleft] - Print time left in Mins (approximate) and exit
-[shuffle] - Enable/Disable Shuffle | Set to ${2:-'\$2'} if specified
+[shuffle] - Enable/Disable Shuffle | Set to $2 if specified
 [shuffle_state] - Print state of shuffle and exit
-[download] - Download currently playing song using ytdl | "${@:-'\$@'}" are ytdl flags
-[grab|agrab] - Grab the album art for a file by searching for it using mp4 mediainfo and embed | ${2:-'\$2'} must be a file
-[track_info] - Return info for ${2:-'\$2'} | ${2:-'\$2'} must be a track ID
+[download] - Download currently playing song using ytdl | $@ are ytdl flags
+[grab|agrab] - Grab the album art for a file by searching for it using mp4 mediainfo and embed | $2 must be a file
+[track_info] - Return info for $2 | $2 must be a track ID
 --- Parents/Profiles
 [playlist] - playlist subcommands/children | see playlist()
 EOF
